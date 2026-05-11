@@ -373,7 +373,7 @@ npm run dist     # → dist/JS Infinite Trainer Setup 1.0.0.exe
 ## Текущая БД (prod, Neon)
 
 ```
-users:        4 записи (1 pro — movsarusumov0@gmail.com)
+users:        4 записи (1 pro — Email@gmail.com)
 sessions:     8 активных
 progress:     2 записи (python + js для одного юзера)
 subscriptions: нет (Stripe не настроен)
