@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { env } from '../config.js';
 import { db } from '../db/client.js';
 import { users, subscriptions } from '../db/schema.js';
+import { sendProActivatedEmail } from './email.service.js';
 
 // Stripe client — null when not configured (graceful degradation)
 export const stripe: Stripe | null = env.STRIPE_SECRET_KEY
@@ -119,6 +120,10 @@ async function _activateSubscription(userId: string, session: Stripe.Checkout.Se
   const periodEnd = sub.current_period_end
     ? new Date(sub.current_period_end * 1000)
     : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  // Send receipt email (fire-and-forget)
+  const [activatedUser] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
+  if (activatedUser) void sendProActivatedEmail(activatedUser.email);
 
   await db.insert(subscriptions).values({
     userId,

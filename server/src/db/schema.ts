@@ -74,6 +74,22 @@ export const progress = pgTable(
   }),
 );
 
+export const customTasks = pgTable(
+  'custom_tasks',
+  {
+    id:        uuid('id').defaultRandom().primaryKey(),
+    userId:    uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    taskId:    text('task_id').notNull(),
+    kernelId:  text('kernel_id').notNull(),
+    payload:   jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    userTaskIdx: uniqueIndex('custom_tasks_user_task_idx').on(t.userId, t.taskId),
+  }),
+);
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type User         = typeof users.$inferSelect;

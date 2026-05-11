@@ -13,6 +13,7 @@ import {
 import { restoreSession, login, register, logout, getStoredEmail, isLoggedIn } from './api/auth.mjs';
 import { syncProgress, fetchAndMergeProgress } from './api/progress.mjs';
 import { startCheckout, openBillingPortal, getBillingStatus } from './api/billing.mjs';
+import { syncCustomTask, deleteCustomTaskFromServer, fetchAndMergeCustomTasks } from './api/customTasks.mjs';
 import { fetchLeaderboard } from './api/leaderboard.mjs';
 
 const KERNEL_STORAGE_KEY = 'jsTrainer.kernel.v1';
@@ -2571,6 +2572,7 @@ function renderCustomTaskList() {
       renderCustomTaskList();
       updateCustomFormButtonLabel();
       setRunStatus('Пользовательская задача удалена.', 'neutral');
+      void deleteCustomTaskFromServer(id);
     });
   });
 }
@@ -2655,6 +2657,7 @@ function saveCustomTaskFromForm(event) {
     updateProgressView();
     updateAchievementsView();
     setRunStatus('Пользовательская задача сохранена.', 'success');
+    void syncCustomTask(task);
   } catch (error) {
     setRunStatus(error.message || 'Не удалось сохранить задачу.', 'danger');
   }
@@ -3454,10 +3457,20 @@ async function init() {
   }
 
   // Restore cloud session in background — non-blocking
-  restoreSession().then((loggedIn) => {
+  restoreSession().then(async (loggedIn) => {
     renderAuthStatus();
     if (loggedIn) {
-      pullFromCloud();
+      void pullFromCloud();
+      // Pull custom tasks from server and merge with local
+      try {
+        const merged = await fetchAndMergeCustomTasks(ACTIVE_KERNEL_ID, state.customTasks);
+        if (merged.length !== state.customTasks.length ||
+            merged.some((t, i) => t.id !== state.customTasks[i]?.id)) {
+          state.customTasks = merged;
+          saveCustomTasks();
+          renderCustomTaskList();
+        }
+      } catch { /* offline */ }
     }
   }).catch(() => {});
 

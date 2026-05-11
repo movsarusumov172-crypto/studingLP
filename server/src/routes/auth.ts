@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AuthService, AppError } from '../services/auth.service.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { sendWelcomeEmail } from '../services/email.service.js';
 
 const authService = new AuthService();
 
@@ -33,6 +34,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const user         = await authService.register(email, password);
     const accessToken  = buildAccessToken(app, user.id, user.plan);
     const refreshToken = await authService.createRefreshToken(user.id);
+
+    // Fire-and-forget — don't delay response if email fails
+    void sendWelcomeEmail(email);
 
     return reply.code(201).send({ accessToken, refreshToken, plan: user.plan });
   });
