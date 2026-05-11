@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"process.stdout.write(JSON.stringify({systemMessage:'[README] Обнови README.md если изменились: код, архитектура, фичи, API, схема БД, env-переменные. Путь: ../README.md'}))\"",
+            "statusMessage": "README check..."
+          }
+        ]
+      }
+    ]
+  }
+}

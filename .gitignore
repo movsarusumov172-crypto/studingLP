@@ -29,9 +29,12 @@ Thumbs.db
 *.lnk
 desktop.ini
 
-# Claude Code internals
+# Claude Code internals (local session data only)
 .agents/
-.claude/
+**/.claude/settings.local.json
+**/.claude/todos.json
+**/.claude/*.jsonl
+**/.claude/worktrees/
 
 # Misc
 skills-lock.json
