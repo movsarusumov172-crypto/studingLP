@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/icon.ico
+
+# Electron compiled assets (generated at build time)
+studingJS/src/renderer/monaco.bundle.js
+studingJS/src/renderer/monaco.bundle.css
+studingJS/src/renderer/codicon-*.ttf
+
+# Server compiled output
+server/dist/
+server/drizzle/
+
+# Environment — NEVER commit real credentials
+.env
+*.env.local
+
+# Logs
+*.log
+*.err.log
+*.out.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.lnk
+desktop.ini
+
+# Claude Code internals
+.agents/
+.claude/
+
+# Misc
+skills-lock.json
+Uninst.bat

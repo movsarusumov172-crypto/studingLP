@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.err.log
+*.out.log
+src/renderer/monaco.bundle.js
+src/renderer/monaco.bundle.css
+src/renderer/codicon-*.ttf

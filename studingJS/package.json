@@ -1,0 +1,84 @@
+{
+  "name": "js-infinite-trainer",
+  "version": "1.0.0",
+  "author": "SKM",
+  "description": "Бесконечный тренажёр программирования — JS, Python, Go, C, C++, C#, Java. Процедурная генерация задач, Monaco IDE, SRS, XP-система.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "prestart": "node scripts/build-monaco.mjs",
+    "start": "electron .",
+    "prebuild": "node scripts/create-icon.mjs && node scripts/build-monaco.mjs",
+    "predist": "node scripts/create-icon.mjs && node scripts/build-monaco.mjs",
+    "build": "electron-builder",
+    "dist": "electron-builder --win",
+    "smoke": "node src/tests/smokeTest.js",
+    "tasks:contract": "node src/tests/tasksContractTest.js",
+    "diversity": "node src/tests/diversityTest.js",
+    "weighting": "node src/tests/weightingTest.js",
+    "fallback": "node src/tests/fallbackTest.js",
+    "review:loop": "node src/tests/reviewLoopTest.js",
+    "qa:trust": "node src/tests/taskQualityTest.js",
+    "drafts:persistence": "node src/tests/taskDraftPersistenceTest.js",
+    "theory:content": "node src/tests/theoryContentTest.js",
+    "theory:scroll": "node src/tests/theoryDrawerScrollTest.js",
+    "variation": "node src/tests/variationGuardTest.js",
+    "python:variation": "node src/tests/pythonVariationGuardTest.js",
+    "java:variation": "node src/tests/kernelVariationGuard.js java",
+    "csharp:variation": "node src/tests/kernelVariationGuard.js csharp",
+    "go:variation": "node src/tests/kernelVariationGuard.js go",
+    "go:smoke": "node src/tests/goSmokeTest.js",
+    "report:serialization": "node src/tests/reportSerializationTest.js",
+    "runtime:timeout": "node src/tests/runtimeTimeoutTest.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.25.12"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.55.1"
+  },
+  "build": {
+    "appId": "com.jsinfinitetrainer.app",
+    "productName": "JS Infinite Trainer",
+    "copyright": "Copyright © 2025 SKM",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json",
+      "node_modules/monaco-editor/**/*"
+    ],
+    "afterPack": "scripts/after-pack.cjs",
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "JS Infinite Trainer",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

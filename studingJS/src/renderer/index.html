@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://perfect-curiosity-production-b689.up.railway.app;"
+    />
+    <title>JS Infinite Trainer</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="../../node_modules/monaco-editor/min/vs/editor/editor.main.css" />
+    <link rel="stylesheet" href="./monaco.bundle.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <section class="panel profile-panel" id="profilePanel">
+          <div class="profile-progress">
+            <div class="level-row">
+              <div class="level-badge" id="levelBadge">1</div>
+              <div class="level-meta">
+                <div id="levelLabel" class="xp-summary">Уровень 1</div>
+                <div id="xpSummary" class="xp-summary">0 XP</div>
+                <div class="progress-track"><div id="xpBar" class="progress-fill"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            id="profileToggle"
+            class="panel-heading panel-heading-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="profileBody"
+          >
+            <div>
+              <h2>Профиль</h2>
+              <span id="profileToggleHint" class="muted">Нажми, чтобы открыть информацию</span>
+            </div>
+            <span class="panel-chevron" aria-hidden="true">⌄</span>
+          </button>
+
+          <div id="profileBody" class="profile-body hidden">
+            <div class="profile-front">
+              <div class="brand-mark profile-mark">JS</div>
+              <div class="profile-copy">
+                <h1 id="profileName">Infinite Trainer</h1>
+                <p id="profileSubtitle">Адаптивная практика программирования для Windows</p>
+              </div>
+            </div>
+
+            <div class="stats-grid profile-stats">
+              <div><span>Решено</span><strong id="statSolved">0</strong></div>
+              <div><span>Точность</span><strong id="statAccuracy">0%</strong></div>
+              <div><span>Серия</span><strong id="statStreak">0</strong></div>
+              <div><span>Попытки</span><strong id="statAttempts">0</strong></div>
+              <div><span>Рекорд</span><strong id="statFastest">—</strong></div>
+              <div><span>Среднее</span><strong id="statAvg">—</strong></div>
+            </div>
+            <div class="button-row">
+              <button id="exportProgressBtn" class="button button-secondary" type="button" style="font-size:0.8rem;padding:6px 10px;">Экспорт прогресса</button>
+              <button id="importProgressBtn" class="button button-secondary" type="button" style="font-size:0.8rem;padding:6px 10px;">Импорт прогресса</button>
+              <input id="importProgressInput" class="hidden" type="file" accept=".json,application/json" />
+            </div>
+
+            <div class="auth-status-bar" id="authStatusBar">
+              <button id="authOpenBtn" class="button button-secondary auth-open-btn" type="button">☁ Войти в аккаунт</button>
+              <div id="authUserBar" class="auth-user-bar hidden">
+                <span class="auth-sync-dot" id="authSyncDot" title="Синхронизация"></span>
+                <button id="accountOpenBtn" class="button button-secondary auth-account-btn" type="button">☁ Аккаунт</button>
+                <button id="leaderboardOpenBtn" class="button button-secondary auth-icon-btn" type="button" title="Лидерборд">⊞</button>
+              </div>
+              <button id="upgradeOpenBtn" class="button button-primary upgrade-open-btn hidden" type="button">★ Pro — $6/мес</button>
+            </div>
+
+            <section class="skill-graph-panel compact">
+              <div class="panel-heading">
+                <h2>Учебная карта</h2>
+                <span id="skillGraphSummary" class="muted">Что уже умеешь и что добить</span>
+              </div>
+              <div class="skill-overview">
+                <article class="skill-stat-card">
+                  <span>Сильнейший навык</span>
+                  <strong id="skillStrongest">—</strong>
+                  <small id="skillStrongestMeta">Пока нет данных</small>
+                </article>
+                <article class="skill-stat-card">
+                  <span>Нужно добить</span>
+                  <strong id="skillWeakest">—</strong>
+                  <small id="skillWeakestMeta">Пока нет данных</small>
+                </article>
+                <article class="skill-stat-card">
+                  <span>Следующий шаг</span>
+                  <strong id="skillNext">—</strong>
+                  <small id="skillNextMeta">Пока нет рекомендаций</small>
+                </article>
+              </div>
+              <div id="skillGraphList" class="skill-graph-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Ядра</h2>
+            <span id="kernelStatus" class="muted">JavaScript активно</span>
+          </div>
+          <div class="select-grid">
+            <label>
+              <span>Активное ядро</span>
+              <select id="kernelSelect"></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel skills-panel" id="skillsPanel">
+          <button
+            id="skillsToggle"
+            class="panel-heading panel-heading-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="skillsBody"
+          >
+            <div>
+              <h2 id="skillsPanelTitle">Навыки</h2>
+              <span id="skillsPanelSummary" class="muted">Выбери одну или несколько</span>
+            </div>
+            <span class="panel-chevron" aria-hidden="true">⌄</span>
+          </button>
+
+          <div id="skillsBody" class="skills-body hidden">
+            <div class="panel-heading compact-heading">
+              <h3 class="subheading">Категории</h3>
+              <span class="muted">Укажи галочки</span>
+            </div>
+            <div id="categoryFilters" class="filters-grid"></div>
+
+            <div class="panel-heading compact-heading skills-spacing">
+              <h3 class="subheading">Сложность</h3>
+              <span class="muted">Фокус или микс</span>
+            </div>
+            <div id="difficultyFilters" class="chips-row"></div>
+
+            <div class="select-grid">
+              <label>
+                <span>Фокус категории</span>
+                <select id="focusCategorySelect"></select>
+              </label>
+              <label>
+                <span>Фокус сложности</span>
+                <select id="focusDifficultySelect"></select>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Режимы</h2>
+            <span class="muted">Мощные сценарии обучения</span>
+          </div>
+          <label class="toggle-row">
+            <input id="randomModeCheckbox" type="checkbox" checked />
+            <span>Случайный режим</span>
+          </label>
+          <label class="toggle-row">
+            <input id="infiniteModeCheckbox" type="checkbox" />
+            <span>Бесконечная тренировка</span>
+          </label>
+          <label class="toggle-row">
+            <input id="autoHintCheckbox" type="checkbox" />
+            <span>Автоподсказка после 2 ошибок</span>
+          </label>
+          <div class="button-stack">
+            <button id="generateTaskBtn" class="button button-primary" type="button">Начать тренировку</button>
+            <button id="reviewChallengeBtn" class="button button-secondary" type="button">Повторить слабое место</button>
+            <button id="dailyChallengeBtn" class="button button-secondary" type="button">Ежедневная сессия</button>
+            <button id="bossChallengeBtn" class="button button-secondary" type="button">Сложное испытание</button>
+          </div>
+        </section>
+
+        <details class="panel achievements-panel">
+          <summary class="panel-heading">
+            <div>
+              <h2>Достижения</h2>
+              <span class="muted">Открой все</span>
+            </div>
+          </summary>
+          <div id="achievementsList" class="achievements-list"></div>
+        </details>
+
+        <details class="panel custom-panel">
+          <summary>
+            <div>
+              <h2>Своя задача</h2>
+              <span class="muted">Добавь собственный тренажёрный кейс</span>
+            </div>
+          </summary>
+          <form id="customTaskForm" class="custom-form">
+            <label><span>Название</span><input id="customTitle" type="text" /></label>
+            <div class="select-grid">
+              <label><span>Категория</span><select id="customCategory"></select></label>
+              <label><span>Сложность</span><select id="customDifficulty"></select></label>
+            </div>
+            <label><span>Стратегия</span><select id="customStrategy"></select></label>
+            <label><span>Сигнатура</span><input id="customSignature" type="text" /></label>
+            <label><span>Условие</span><textarea id="customPrompt" rows="4"></textarea></label>
+            <label><span>Код-заготовка</span><textarea id="customStarter" rows="6"></textarea></label>
+            <label><span>Правильный ответ</span><textarea id="customSolution" rows="6"></textarea></label>
+            <label><span>Тесты JSON</span><textarea id="customTests" rows="7"></textarea></label>
+            <label><span>Подсказки</span><textarea id="customHints" rows="3"></textarea></label>
+            <label><span>Разбор</span><textarea id="customExplanation" rows="4"></textarea></label>
+            <div class="button-row">
+              <button id="fillTemplateBtn" class="button button-secondary" type="button">Шаблон</button>
+              <button id="saveCustomTaskBtn" class="button button-primary" type="submit">Сохранить</button>
+              <button id="exportCustomTasksBtn" class="button button-secondary" type="button">Экспорт JSON</button>
+              <button id="importCustomTasksBtn" class="button button-secondary" type="button">Импорт JSON</button>
+              <input id="customTasksImportInput" class="hidden" type="file" accept=".json,application/json" />
+            </div>
+          </form>
+          <div class="custom-list-wrap">
+            <div class="panel-subhead">Сохранённые задачи</div>
+            <div id="customTaskList" class="custom-task-list"></div>
+          </div>
+        </details>
+      </aside>
+
+      <main class="workspace">
+        <header class="hero panel">
+          <div class="hero-top">
+            <div>
+              <div class="eyebrow">Windows desktop app</div>
+              <h2>Практика JavaScript без конца</h2>
+            </div>
+            <div class="hero-actions">
+              <button id="resetCodeBtn" class="button button-secondary" type="button">Сбросить код</button>
+              <button id="copyStarterBtn" class="button button-secondary" type="button">Скопировать шаблон</button>
+              <button id="showHintBtn" class="button button-secondary" type="button">Подсказка</button>
+              <button id="showAnswerBtn" class="button button-secondary" type="button">Ответ</button>
+              <button id="nextTaskBtn" class="button button-secondary" type="button">Следующая</button>
+            </div>
+          </div>
+          <div class="task-badges">
+            <span id="taskCategoryBadge" class="badge">Категория</span>
+            <span id="taskDifficultyBadge" class="badge">Сложность</span>
+            <span id="taskXpBadge" class="badge badge-soft">XP</span>
+            <span id="taskTrustBadge" class="badge badge-soft">QA</span>
+            <span id="taskModeBadge" class="badge badge-soft">Режим</span>
+            <button id="shareSeedBtn" class="badge badge-share" type="button" title="Скопировать seed задачи">⌗ seed</button>
+          </div>
+          <h1 id="taskTitle">Генерация задачи...</h1>
+          <p id="taskPrompt" class="task-prompt">Здесь появится условие задачи.</p>
+          <div class="signature-row">
+            <span>Сигнатура:</span>
+            <code id="taskSignature">solve(input)</code>
+          </div>
+        </header>
+
+        <section class="editor-card panel">
+          <div class="panel-heading">
+            <h2>Мини-IDE</h2>
+            <span class="muted">Ctrl+Enter - запуск</span>
+          </div>
+          <div class="editor-toolbar">
+            <div class="editor-toolbar-left">
+              <button id="runTestsBtn" class="button button-primary" type="button">Запустить тесты</button>
+              <span id="runStatus" class="run-status">Готово к практике</span>
+            </div>
+            <div class="editor-toolbar-right">
+              <span id="hintCounter" class="muted">Подсказки: 0</span>
+            </div>
+          </div>
+          <div class="editor-shell">
+            <div id="codeEditor" class="code-editor-host"></div>
+          </div>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="panel output-panel">
+            <div class="panel-heading">
+              <h2>Результаты</h2>
+              <span class="muted">Проверка решения</span>
+            </div>
+            <div id="testResults" class="test-results"></div>
+            <div id="learningFeedback" class="learning-feedback"></div>
+          </article>
+
+          <article class="panel output-panel">
+            <div class="panel-heading">
+              <h2>Подсказки</h2>
+              <span class="muted">Учись постепенно</span>
+            </div>
+            <div id="hintPanel" class="hint-panel"></div>
+            <div id="solutionPanel" class="solution-panel" hidden></div>
+          </article>
+
+          <article class="panel output-panel">
+            <div class="panel-heading">
+              <h2>Логи</h2>
+              <span class="muted">console.* из песочницы</span>
+            </div>
+            <pre id="consoleOutput" class="console-output"></pre>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div id="feedbackLayer" class="feedback-layer" aria-live="polite" aria-atomic="true"></div>
+
+    <div
+      id="onboardingOverlay"
+      class="onboarding-overlay hidden"
+      aria-hidden="true"
+    >
+      <div
+        class="onboarding-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboardingTitle"
+        aria-describedby="onboardingDescription"
+      >
+        <div class="onboarding-kicker">Первый запуск</div>
+        <h2 id="onboardingTitle">Начнём с одной простой задачи</h2>
+        <p id="onboardingDescription" class="onboarding-description">
+          Мы подберём лёгкий стартовый сценарий, чтобы ты сразу увидел цикл:
+          задача, проверка, XP и следующая задача. Без 12 настроек на старте.
+        </p>
+
+        <div class="onboarding-track" id="onboardingTrack">JS · Лёгкий старт</div>
+
+        <div class="onboarding-steps">
+          <article class="onboarding-step">
+            <span>1</span>
+            <div>
+              <strong>Старт</strong>
+              <p>Запускаем простой сценарий под твой текущий язык.</p>
+            </div>
+          </article>
+          <article class="onboarding-step">
+            <span>2</span>
+            <div>
+              <strong>Решение</strong>
+              <p>Пишешь код и жмёшь Ctrl+Enter или кнопку проверки.</p>
+            </div>
+          </article>
+          <article class="onboarding-step">
+            <span>3</span>
+            <div>
+              <strong>Прогресс</strong>
+              <p>Получаешь XP, серию и мгновенно переходишь к следующей задаче.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="onboarding-actions">
+          <button id="startOnboardingBtn" class="button button-primary" type="button">Начать 5-минутную сессию</button>
+          <button id="skipOnboardingBtn" class="button button-secondary" type="button">Показать все настройки</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account modal -->
+    <div id="accountOverlay" class="auth-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="auth-card account-card">
+        <div class="account-header">
+          <div class="account-avatar" id="accountAvatar">?</div>
+          <div class="account-info">
+            <div id="accountEmail" class="account-email">—</div>
+            <span id="accountPlanBadge" class="account-plan-badge">Free</span>
+          </div>
+          <button id="accountCloseBtn" class="auth-skip account-close" type="button">✕</button>
+        </div>
+
+        <div class="account-section">
+          <div class="account-row">
+            <span class="muted">Синхронизация</span>
+            <span id="accountSyncStatus" class="account-sync-status">—</span>
+          </div>
+          <div class="account-row" id="accountSubRow" style="display:none">
+            <span class="muted">Подписка до</span>
+            <span id="accountSubEnd">—</span>
+          </div>
+        </div>
+
+        <div class="account-actions">
+          <button id="accountRefreshPlanBtn" class="button button-secondary account-action-btn" type="button">↻ Обновить план</button>
+          <button id="accountUpgradeBtn"     class="button button-primary account-action-btn hidden" type="button">★ Перейти на Pro</button>
+          <button id="accountPortalBtn"      class="button button-secondary account-action-btn hidden" type="button">Управление подпиской</button>
+          <button id="accountLeaderboardBtn" class="button button-secondary account-action-btn" type="button">⊞ Лидерборд</button>
+          <button id="accountLogoutBtn"      class="button button-secondary account-action-btn" type="button">Выйти из аккаунта</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upgrade to Pro modal -->
+    <div id="upgradeOverlay" class="auth-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="auth-card upgrade-card">
+        <div class="upgrade-header">
+          <div class="brand-mark auth-brand">JS</div>
+          <div>
+            <h2>JS Infinite Trainer Pro</h2>
+            <p class="muted">Разблокируй все языки и возможности</p>
+          </div>
+        </div>
+
+        <div class="upgrade-features">
+          <div class="upgrade-feature">
+            <span class="upgrade-check free">✓</span>
+            <div><strong>Все 7 языков</strong><span class="muted"> — бесплатно навсегда</span></div>
+          </div>
+          <div class="upgrade-feature">
+            <span class="upgrade-check free">✓</span>
+            <div><strong>Облачный бэкап прогресса</strong><span class="muted"> — бесплатно</span></div>
+          </div>
+          <div class="upgrade-feature">
+            <span class="upgrade-check pro">★</span>
+            <div><strong>Лидерборд</strong><span class="muted"> — соревнуйся с другими</span></div>
+          </div>
+          <div class="upgrade-feature">
+            <span class="upgrade-check pro">★</span>
+            <div><strong>Друзья и дуэли</strong><span class="muted"> — соревнование 1v1</span></div>
+          </div>
+          <div class="upgrade-feature">
+            <span class="upgrade-check pro">★</span>
+            <div><strong>Командный режим</strong><span class="muted"> — общий прогресс группы</span></div>
+          </div>
+        </div>
+
+        <div class="upgrade-price">
+          <span class="upgrade-amount">$6</span>
+          <span class="muted"> / месяц</span>
+        </div>
+
+        <button id="upgradeCheckoutBtn" class="button button-primary upgrade-cta" type="button">Перейти к оплате →</button>
+        <div id="upgradeError" class="auth-error hidden"></div>
+
+        <div class="upgrade-actions">
+          <button id="upgradePortalBtn" class="auth-skip" type="button" style="display:none">Управление подпиской</button>
+          <button id="upgradeCloseBtn" class="auth-skip" type="button">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard modal -->
+    <div id="leaderboardOverlay" class="auth-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="auth-card leaderboard-card">
+        <div class="leaderboard-header">
+          <div>
+            <h2 id="leaderboardTitle">Лидерборд</h2>
+            <p id="leaderboardSubtitle" class="muted">Топ по XP</p>
+          </div>
+          <button id="leaderboardCloseBtn" class="auth-skip" type="button" style="font-size:1.2rem">✕</button>
+        </div>
+        <div id="leaderboardList" class="leaderboard-list">
+          <div class="theory-loading">Загружаю…</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="authOverlay" class="auth-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authOverlayTitle">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="brand-mark auth-brand">JS</div>
+          <div>
+            <h2 id="authOverlayTitle">JS Infinite Trainer</h2>
+            <p class="muted">Сохраняй прогресс в облаке. Бесплатно.</p>
+          </div>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+          <button id="authTabLogin"    class="auth-tab active" type="button" data-tab="login"    role="tab" aria-selected="true">Войти</button>
+          <button id="authTabRegister" class="auth-tab"        type="button" data-tab="register" role="tab" aria-selected="false">Регистрация</button>
+        </div>
+
+        <form id="authForm" class="auth-form" novalidate>
+          <div id="authError" class="auth-error hidden"></div>
+          <label class="auth-label">
+            <span>Email</span>
+            <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+          </label>
+          <label class="auth-label">
+            <span>Пароль</span>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="минимум 8 символов" />
+          </label>
+          <button id="authSubmitBtn" class="button button-primary auth-submit" type="submit">Войти</button>
+        </form>
+
+        <button id="authSkipBtn" class="auth-skip" type="button">Продолжить без аккаунта →</button>
+      </div>
+    </div>
+
+    <script type="module" defer src="./app.js"></script>
+  </body>
+</html>
