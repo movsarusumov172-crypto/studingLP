@@ -243,12 +243,23 @@
               <button id="nextTaskBtn" class="button button-secondary" type="button">Следующая</button>
             </div>
           </div>
+          <!-- Session progress bar — visible only during smart session -->
+          <div id="sessionBar" class="session-bar hidden">
+            <div class="session-bar-top">
+              <span id="sessionLabel" class="session-label"></span>
+              <span id="sessionCounter" class="session-counter"></span>
+            </div>
+            <div id="sessionDots" class="session-dots"></div>
+            <p id="sessionTip" class="session-tip"></p>
+          </div>
+
           <div class="task-badges">
             <span id="taskCategoryBadge" class="badge">Категория</span>
             <span id="taskDifficultyBadge" class="badge">Сложность</span>
             <span id="taskXpBadge" class="badge badge-soft">XP</span>
             <span id="taskTrustBadge" class="badge badge-soft">QA</span>
             <span id="taskModeBadge" class="badge badge-soft">Режим</span>
+            <span id="taskSkillBadge" class="badge badge-skill hidden"></span>
             <button id="shareSeedBtn" class="badge badge-share" type="button" title="Скопировать seed задачи">⌗ seed</button>
           </div>
           <h1 id="taskTitle">Генерация задачи...</h1>
@@ -359,6 +370,23 @@
           <button id="startOnboardingBtn" class="button button-primary" type="button">Начать 5-минутную сессию</button>
           <button id="skipOnboardingBtn" class="button button-secondary" type="button">Показать все настройки</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Session summary overlay -->
+    <div id="sessionSummaryOverlay" class="auth-overlay hidden" role="dialog" aria-modal="true">
+      <div class="auth-card session-summary-card">
+        <div class="session-summary-header">
+          <div>
+            <div class="eyebrow">Тренировка завершена</div>
+            <h2 id="sessionSummaryTitle">Отличная работа!</h2>
+          </div>
+          <button id="sessionSummaryCloseBtn" class="auth-skip" type="button" style="font-size:1.2rem">✕</button>
+        </div>
+        <div id="sessionSummaryStats" class="session-summary-stats"></div>
+        <div id="sessionSummaryList" class="session-summary-list"></div>
+        <div id="sessionSummaryNext" class="session-summary-next"></div>
+        <button id="sessionSummaryDoneBtn" class="button button-primary" type="button" style="width:100%;margin-top:6px;justify-content:center">Готово</button>
       </div>
     </div>
 

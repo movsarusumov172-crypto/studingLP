@@ -2082,6 +2082,211 @@ details.panel[open] > summary {
   }
 }
 
+/* ── Thinking skill badge ────────────────────────────────────────────────── */
+
+.badge-skill {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.28);
+  color: #c4b5fd;
+  font-family: var(--code);
+  font-size: 0.72rem;
+}
+
+/* ── Session bar (inside hero, visible during smart session) ─────────────── */
+
+.session-bar {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(214, 178, 90, 0.06);
+  border: 1px solid rgba(214, 178, 90, 0.2);
+  margin-bottom: 2px;
+  display: grid;
+  gap: 8px;
+}
+
+.session-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.session-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--code);
+}
+
+.session-counter {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: var(--code);
+}
+
+.session-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.session-dot {
+  width: 28px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.session-dot.done {
+  background: var(--accent-3);
+}
+
+.session-dot.active {
+  background: var(--accent);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.session-dot.skipped {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+.session-tip {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Session summary overlay ─────────────────────────────────────────────── */
+
+.session-summary-card {
+  width: min(92vw, 480px);
+  max-height: min(80vh, 640px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.session-summary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-summary-header h2 {
+  margin: 4px 0 0;
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.session-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.session-stat {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: center;
+}
+
+.session-stat-value {
+  font-size: 1.3rem;
+  font-weight: 900;
+  font-family: var(--code);
+  color: var(--accent);
+}
+
+.session-stat-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.session-summary-list {
+  display: grid;
+  gap: 6px;
+}
+
+.session-result-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.88rem;
+}
+
+.session-result-row.solved {
+  border-left: 3px solid var(--accent-3);
+}
+
+.session-result-row.skipped {
+  border-left: 3px solid rgba(255, 255, 255, 0.15);
+  opacity: 0.65;
+}
+
+.session-result-icon {
+  font-size: 0.9rem;
+  flex: 0 0 auto;
+}
+
+.session-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-result-label {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-result-meta {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-family: var(--code);
+}
+
+.session-summary-next {
+  padding: 12px;
+  border-radius: 9px;
+  background: rgba(214, 178, 90, 0.05);
+  border: 1px solid rgba(214, 178, 90, 0.18);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.session-summary-next strong {
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 /* ── Auth status bar (profile panel) ─────────────────────────────────────── */
 
 .auth-status-bar {

@@ -248,6 +248,13 @@ const state = {
   streakFxTimer: null,
   generating: false,
   taskStartedAt: null,
+  session: {
+    active:    false,
+    plan:      [],    // [{label, icon, tip, categories, difficulties, mode}]
+    index:     0,     // current step
+    results:   [],    // [{label, icon, solved, skipped, timeMs, category}]
+    startedAt: null,
+  },
   onboardingActive: false,
   profileExpanded: false,
   skillsExpanded: false,
@@ -316,7 +323,20 @@ const els = {
   exportProgressBtn: document.getElementById('exportProgressBtn'),
   importProgressBtn: document.getElementById('importProgressBtn'),
   importProgressInput: document.getElementById('importProgressInput'),
-  shareSeedBtn: document.getElementById('shareSeedBtn'),
+  shareSeedBtn:            document.getElementById('shareSeedBtn'),
+  taskSkillBadge:          document.getElementById('taskSkillBadge'),
+  sessionBar:              document.getElementById('sessionBar'),
+  sessionLabel:            document.getElementById('sessionLabel'),
+  sessionCounter:          document.getElementById('sessionCounter'),
+  sessionDots:             document.getElementById('sessionDots'),
+  sessionTip:              document.getElementById('sessionTip'),
+  sessionSummaryOverlay:   document.getElementById('sessionSummaryOverlay'),
+  sessionSummaryTitle:     document.getElementById('sessionSummaryTitle'),
+  sessionSummaryStats:     document.getElementById('sessionSummaryStats'),
+  sessionSummaryList:      document.getElementById('sessionSummaryList'),
+  sessionSummaryNext:      document.getElementById('sessionSummaryNext'),
+  sessionSummaryCloseBtn:  document.getElementById('sessionSummaryCloseBtn'),
+  sessionSummaryDoneBtn:   document.getElementById('sessionSummaryDoneBtn'),
   authOverlay:    document.getElementById('authOverlay'),
   authOpenBtn:    document.getElementById('authOpenBtn'),
   authUserBar:    document.getElementById('authUserBar'),
@@ -935,6 +955,57 @@ function collectFeedbackAdvice(task, report) {
   if (/undefined|null|cannot read|not defined/i.test(errorText)) {
     pushUnique(reasons, 'Есть обращение к отсутствующему значению');
     pushUnique(advice, 'Добавь проверку на пустые входные данные и осторожнее обращайся к вложенным полям.');
+  }
+
+  // ── Улучшенный разбор (2.2) ─────────────────────────────────────────────
+
+  // Edge case: пустой массив, null, 0, отрицательные числа во входных данных
+  if (failedTest?.input !== undefined) {
+    const inputStr = JSON.stringify(failedTest.input);
+    const hasEdge =
+      /\[\]/.test(inputStr) ||
+      /\bnull\b/.test(inputStr) ||
+      /""|''/.test(inputStr) ||
+      (Array.isArray(failedTest.input) && failedTest.input.some(
+        (a) => a === null || a === undefined ||
+               (Array.isArray(a) && a.length === 0) ||
+               a === 0 || a === '' || (typeof a === 'number' && a < 0)
+      ));
+    if (hasEdge) {
+      pushUnique(reasons, 'Краевой случай не обработан');
+      pushUnique(advice, 'Этот тест подаёт крайние данные: пустой массив [], null, 0 или отрицательное число. Добавь проверку в начало функции — часто это одна строчка.');
+    }
+  }
+
+  // Off-by-one: числа или длины массивов отличаются на 1
+  if (failedTest?.expected !== undefined && failedTest?.actual !== undefined) {
+    const exp = failedTest.expected;
+    const act = failedTest.actual;
+    if (typeof exp === 'number' && typeof act === 'number' && Math.abs(exp - act) === 1) {
+      pushUnique(reasons, 'Off-by-one: результат на 1 больше или меньше');
+      pushUnique(advice, 'Проверь граничные условия: < vs <=, индекс массива (начинается с 0), включается ли последний элемент.');
+    }
+    if (Array.isArray(exp) && Array.isArray(act) && Math.abs(exp.length - act.length) === 1) {
+      pushUnique(reasons, `Лишний или пропущенный элемент (ожидалось ${exp.length}, получено ${act.length})`);
+      pushUnique(advice, 'Проверь условие включения первого или последнего элемента. Часто дело в < vs <= в цикле.');
+    }
+  }
+
+  // Функция ничего не вернула
+  if ((failedTest?.actual === undefined || failedTest?.actual === null) &&
+       failedTest?.expected !== undefined && failedTest?.expected !== null) {
+    pushUnique(reasons, 'Функция не вернула значение');
+    pushUnique(advice, 'Убедись что return стоит в нужном месте — не внутри if без else, не потерян в async, не забыт в конце.');
+  }
+
+  // Тип ответа не тот
+  if (failedTest?.expected !== undefined && failedTest?.actual !== undefined) {
+    const expType = Array.isArray(failedTest.expected) ? 'array' : typeof failedTest.expected;
+    const actType = Array.isArray(failedTest.actual)   ? 'array' : typeof failedTest.actual;
+    if (expType !== actType && expType !== 'undefined' && actType !== 'undefined') {
+      pushUnique(reasons, `Неверный тип ответа: ожидается ${expType}, получен ${actType}`);
+      pushUnique(advice, `Задача ожидает ${expType}. Проверь что функция возвращает правильный тип — не строку вместо числа, не объект вместо массива.`);
+    }
   }
 
   switch (task?.strategy) {
@@ -2306,7 +2377,7 @@ function updateReviewDeckAfterRun(passed) {
   state.progress.reviewDeck = currentDeck;
 }
 
-async function generateTask(mode = 'practice') {
+async function generateTask(mode = 'practice', sessionOverrides = {}) {
   if (state.generating) {
     return;
   }
@@ -2322,13 +2393,14 @@ async function generateTask(mode = 'practice') {
   setRunStatus('Генерируем задачу...', 'neutral');
   let task;
   try {
-    task = await api.generateTask(getGeneratorOptions(mode, reviewRoute ? {
-      categories: [reviewRoute.category],
-      difficulties: [reviewRoute.difficulty],
-      focusCategory: reviewRoute.category,
+    const overrides = reviewRoute ? {
+      categories:     [reviewRoute.category],
+      difficulties:   [reviewRoute.difficulty],
+      focusCategory:  reviewRoute.category,
       focusDifficulty: reviewRoute.difficulty,
-      randomMode: false
-    } : {}));
+      randomMode:     false,
+    } : sessionOverrides;
+    task = await api.generateTask(getGeneratorOptions(mode, overrides));
   } catch (error) {
     setRunStatus('Не удалось сгенерировать задачу.', 'danger');
     return;
@@ -2345,6 +2417,8 @@ async function generateTask(mode = 'practice') {
   updateTaskEditor(loadDraftForTask(task));
   syncEditorLanguage(getEditorLanguageId(task));
   renderTask(task);
+  renderThinkingSkill(task);
+  if (state.session.active) renderSessionBar();
   renderHintPanel();
   renderSolutionPanel();
   renderResults(null);
@@ -2390,7 +2464,10 @@ async function runCurrentTask() {
         if (streakMilestone > 0) {
           showStreakCelebration(streakMilestone);
         }
-        if (state.settings.infiniteMode) {
+        if (state.session.active) {
+          // Auto-advance session after 1.5s
+          setTimeout(() => advanceSession(true), 1500);
+        } else if (state.settings.infiniteMode) {
           scheduleNextTask('practice');
         }
       } else {
@@ -2904,6 +2981,233 @@ function renderUpgradeBtn() {
   els.upgradeOpenBtn.classList.toggle('hidden', !loggedIn || pro);
 }
 
+// ── Thinking skill labels (2.4) ───────────────────────────────────────────────
+
+const THINKING_SKILLS = {
+  async:      { label: 'Async-мышление',      color: '#fb7185' },
+  closure:    { label: 'Управление памятью',   color: '#34d399' },
+  dom:        { label: 'UI и события',         color: '#22c55e' },
+  arrays:     { label: 'Коллекции',            color: '#7dd3fc' },
+  objects:    { label: 'Структуры данных',     color: '#a78bfa' },
+  functions:  { label: 'Декомпозиция',         color: '#f59e0b' },
+  closures:   { label: 'Замыкания',            color: '#34d399' },
+  algorithms: { label: 'Алгоритмы',           color: '#f97316' },
+};
+
+function getThinkingSkill(task) {
+  return THINKING_SKILLS[task?.strategy] ||
+         THINKING_SKILLS[task?.category] ||
+         { label: 'Программирование', color: '#7a8ba6' };
+}
+
+function renderThinkingSkill(task) {
+  if (!els.taskSkillBadge) return;
+  if (!task) { els.taskSkillBadge.classList.add('hidden'); return; }
+  const skill = getThinkingSkill(task);
+  els.taskSkillBadge.textContent = `◈ ${skill.label}`;
+  els.taskSkillBadge.style.background = `${skill.color}18`;
+  els.taskSkillBadge.style.borderColor = `${skill.color}36`;
+  els.taskSkillBadge.style.color       = skill.color;
+  els.taskSkillBadge.classList.remove('hidden');
+}
+
+// ── Smart Session (2.1 — меньше выбора, больше направления) ─────────────────
+
+function buildTodaySession() {
+  const data       = buildSkillGraphData();
+  const snapshot   = getReviewSnapshotForProgress();
+  const allItems   = data.items.slice().sort((a, b) => a.mastery - b.mastery);
+  const weakTop3   = allItems.slice(0, 3).map((i) => i.category);
+
+  const plan = [
+    {
+      label:        'Разминка',
+      icon:         '🔥',
+      tip:          'Лёгкая задача чтобы войти в ритм и размять пальцы.',
+      categories:   CATEGORY_KEYS.slice(),
+      difficulties: ['easy'],
+      mode:         'practice',
+    },
+    {
+      label:        CATEGORY_META[weakTop3[0]]?.title ?? 'Слабая тема',
+      icon:         '🎯',
+      tip:          'Твоя сейчас слабейшая тема — хорошее место чтобы расти.',
+      categories:   weakTop3[0] ? [weakTop3[0]] : CATEGORY_KEYS.slice(),
+      difficulties: ['easy', 'medium'],
+      mode:         'practice',
+    },
+    {
+      label:        CATEGORY_META[weakTop3[1]]?.title ?? 'Слабая тема',
+      icon:         '🎯',
+      tip:          'Вторая слабая зона. Не нужно идеально — просто практика.',
+      categories:   weakTop3[1] ? [weakTop3[1]] : CATEGORY_KEYS.slice(),
+      difficulties: ['medium'],
+      mode:         'practice',
+    },
+    {
+      label:        `${CATEGORY_META[weakTop3[0]]?.title ?? 'Тема'} — сложнее`,
+      icon:         '💪',
+      tip:          'Та же слабая тема, но сложнее. Закрепляем понимание.',
+      categories:   weakTop3[0] ? [weakTop3[0]] : CATEGORY_KEYS.slice(),
+      difficulties: ['medium', 'hard'],
+      mode:         'practice',
+    },
+  ];
+
+  // Добавляем повторение если есть просроченные
+  if (snapshot.dueItems.length > 0) {
+    const due = snapshot.dueItems[0];
+    plan.push({
+      label:        `Повторение: ${CATEGORY_META[due.category]?.title ?? due.category}`,
+      icon:         '🔄',
+      tip:          'Эта тема ждёт повторения — лучший момент закрепить.',
+      categories:   [due.category],
+      difficulties: DIFFICULTIES.slice(),
+      mode:         'review',
+    });
+  }
+
+  return plan;
+}
+
+function renderSessionBar() {
+  const { session } = state;
+  if (!session.active || !els.sessionBar) return;
+
+  const step  = session.plan[session.index] || session.plan[session.plan.length - 1];
+  const total = session.plan.length;
+  const done  = session.index;
+
+  if (els.sessionLabel)  els.sessionLabel.textContent  = `${step?.icon ?? ''} ${step?.label ?? ''}`;
+  if (els.sessionCounter) els.sessionCounter.textContent = `${done + 1} из ${total}`;
+  if (els.sessionTip)    els.sessionTip.textContent    = step?.tip ?? '';
+
+  if (els.sessionDots) {
+    els.sessionDots.innerHTML = session.plan.map((_, i) => {
+      const result = session.results[i];
+      const cls = result
+        ? (result.skipped ? 'skipped' : 'done')
+        : i === done ? 'active' : '';
+      return `<div class="session-dot ${cls}" title="${session.plan[i].label}"></div>`;
+    }).join('');
+  }
+
+  els.sessionBar.classList.remove('hidden');
+}
+
+function hideSessionBar() {
+  els.sessionBar?.classList.add('hidden');
+}
+
+async function startSession() {
+  const plan = buildTodaySession();
+  state.session = { active: true, plan, index: 0, results: [], startedAt: Date.now() };
+  renderSessionBar();
+  const step = plan[0];
+  await generateTask(step.mode, {
+    categories:   step.categories,
+    difficulties: step.difficulties,
+  });
+}
+
+async function advanceSession(solved, skipped = false) {
+  const { session } = state;
+  if (!session.active) return;
+
+  // Record result for current step
+  const step = session.plan[session.index];
+  session.results.push({
+    label:    step?.label ?? '',
+    icon:     step?.icon ?? '',
+    category: state.currentTask?.category ?? '',
+    solved,
+    skipped,
+    timeMs:   state.taskStartedAt ? Date.now() - state.taskStartedAt : 0,
+  });
+
+  session.index += 1;
+
+  if (session.index >= session.plan.length) {
+    // Session complete
+    showSessionSummary();
+    return;
+  }
+
+  renderSessionBar();
+  const next = session.plan[session.index];
+  await generateTask(next.mode, {
+    categories:   next.categories,
+    difficulties: next.difficulties,
+  });
+}
+
+function showSessionSummary() {
+  if (!els.sessionSummaryOverlay) return;
+  state.session.active = false;
+  hideSessionBar();
+
+  const { results, startedAt } = state.session;
+  const totalMs   = Date.now() - (startedAt ?? Date.now());
+  const solvedN   = results.filter((r) => r.solved).length;
+  const skippedN  = results.filter((r) => r.skipped).length;
+  const totalMins = Math.round(totalMs / 60000);
+
+  // Title
+  if (els.sessionSummaryTitle) {
+    els.sessionSummaryTitle.textContent =
+      solvedN === results.length ? 'Отличная работа!' :
+      solvedN > 0 ? 'Хорошая тренировка!' : 'Тренировка завершена.';
+  }
+
+  // Stats
+  if (els.sessionSummaryStats) {
+    els.sessionSummaryStats.innerHTML = `
+      <div class="session-stat">
+        <div class="session-stat-value">${solvedN}/${results.length}</div>
+        <div class="session-stat-label">Решено</div>
+      </div>
+      <div class="session-stat">
+        <div class="session-stat-value">${totalMins > 0 ? totalMins : '< 1'}</div>
+        <div class="session-stat-label">Минут</div>
+      </div>
+      <div class="session-stat">
+        <div class="session-stat-value">${skippedN}</div>
+        <div class="session-stat-label">Пропущено</div>
+      </div>
+    `;
+  }
+
+  // Results list
+  if (els.sessionSummaryList) {
+    els.sessionSummaryList.innerHTML = results.map((r) => `
+      <div class="session-result-row ${r.solved ? 'solved' : 'skipped'}">
+        <span class="session-result-icon">${r.solved ? '✓' : r.skipped ? '→' : '✗'}</span>
+        <div class="session-result-info">
+          <div class="session-result-label">${escapeHtml(r.icon)} ${escapeHtml(r.label)}</div>
+          <div class="session-result-meta">${escapeHtml(CATEGORY_META[r.category]?.title ?? r.category)} · ${Math.round(r.timeMs / 1000)}с</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Next session suggestion (2.3 — не давить)
+  if (els.sessionSummaryNext) {
+    const snapshot  = getReviewSnapshotForProgress();
+    const nextLabel = snapshot.next
+      ? `Следующее повторение: ${CATEGORY_META[snapshot.next.category]?.title ?? snapshot.next.category} · ${snapshot.next.dueLabel}`
+      : 'На сегодня достаточно. Возвращайся завтра — прогресс идёт.';
+    els.sessionSummaryNext.innerHTML = `<strong>Следующий шаг</strong>${escapeHtml(nextLabel)}`;
+  }
+
+  els.sessionSummaryOverlay.classList.remove('hidden');
+  els.sessionSummaryOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function hideSessionSummary() {
+  els.sessionSummaryOverlay?.classList.add('hidden');
+  els.sessionSummaryOverlay?.setAttribute('aria-hidden', 'true');
+}
+
 // ── Account modal ─────────────────────────────────────────────────────────────
 
 async function showAccountModal() {
@@ -3139,9 +3443,15 @@ function setupControlListeners() {
   if (els.reviewChallengeBtn) {
     els.reviewChallengeBtn.addEventListener('click', () => generateTask('review'));
   }
-  els.dailyChallengeBtn.addEventListener('click', () => generateTask('daily'));
+  els.dailyChallengeBtn.addEventListener('click', () => startSession());
   els.bossChallengeBtn.addEventListener('click', () => generateTask('boss'));
-  els.nextTaskBtn.addEventListener('click', () => generateTask(state.currentMode || 'practice'));
+  els.nextTaskBtn.addEventListener('click', () => {
+    if (state.session.active) {
+      void advanceSession(false, true);
+    } else {
+      generateTask(state.currentMode || 'practice');
+    }
+  });
   els.runTestsBtn.addEventListener('click', runCurrentTask);
   els.resetCodeBtn.addEventListener('click', resetEditor);
   els.showHintBtn.addEventListener('click', () => showNextHint(false));
@@ -3413,8 +3723,12 @@ function setupControlListeners() {
   els.leaderboardCloseBtn?.addEventListener('click', hideLeaderboard);
 
   // Close overlays on Escape
+  els.sessionSummaryCloseBtn?.addEventListener('click', hideSessionSummary);
+  els.sessionSummaryDoneBtn?.addEventListener('click',  hideSessionSummary);
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      hideSessionSummary();
       hideAccountModal();
       hideUpgradeOverlay();
       hideLeaderboard();
