@@ -404,6 +404,59 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
 
+### 2026-05-12 — Codex — theory card overflow fix
+
+**Request:** пройтись по каждому окну теории во всех языках и починить сломанные карточки, включая JS “Функции и стрелки”.
+
+**Changed files:**
+- `README.md`
+- `studingJS/src/renderer/styles.css`
+- `studingJS/src/tests/theoryDrawerScrollTest.js`
+
+**What changed:**
+- Найден корень: длинные строки кода в `pre` заставляли CSS Grid-карточки расширяться шире окна теории.
+- Карточки, блоки, колонки и nav-тексты теории теперь shrinkable через `min-width: 0`.
+- Код в теории теперь переносится внутри карточки (`pre-wrap` + safe overflow), поэтому JS стрелочные функции и длинные Java/C#/Go примеры не раздвигают окно.
+- Расширен `theory:scroll` контракт-тест, чтобы ловить регрессии layout overflow.
+
+**Verification:**
+- Playwright CLI layout audit по 48 темам / 7 языкам — passed: `badCount: 0`, `contentOverflow: 0`, `codeOverflowCount: 0` на `1280x720` и `390x760`.
+- `npm run theory:scroll` — passed.
+- `npm run theory:content` — passed.
+- all theory modules inline import/render check — passed for 48 topics across js, python, go, c, cpp, csharp, java.
+- `node --check src/renderer/app.js` — passed.
+- `npm run smoke` — passed, 200 generated tasks.
+- `git diff --check -- README.md studingJS/src/renderer/styles.css studingJS/src/tests/theoryDrawerScrollTest.js` — passed; Git показал только CRLF warning.
+
+**Coordination notes:**
+- Временные Playwright audit-файлы и локальный static server удалены после проверки.
+- Если Claude Code или Codex дальше правят theory CSS, не убирать `min-width: 0`/`pre-wrap`: именно они держат длинный код внутри окон.
+
+### 2026-05-12 — Codex — theory drawer bounds fix
+
+**Request:** проверить и починить сломанные окна в разделах теории.
+
+**Changed files:**
+- `README.md`
+- `studingJS/src/renderer/styles.css`
+
+**What changed:**
+- Найдено воспроизведение: `npm run theory:scroll` падал на контракте высоты theory drawer.
+- Увеличен внешний зазор theory drawer с `12px` до `14px`.
+- Панель теории теперь использует `width: min(880px, calc(100vw - 28px))` и `max-height: calc(100dvh - 28px)`, чтобы не вылезать за viewport и не ломать внутренний скролл.
+
+**Verification:**
+- `npm run theory:scroll` — passed.
+- `npm run theory:content` — passed.
+- all theory modules inline import/render check — passed for js, python, go, c, cpp, csharp, java.
+- `node --check src/renderer/app.js` — passed.
+- `git diff --check -- studingJS/src/renderer/styles.css` — passed; Git показал только CRLF warning.
+- `npm run smoke` — passed, 200 generated tasks.
+
+**Coordination notes:**
+- Корень был в CSS sizing/scroll contract drawer, не в данных тем.
+- Если дальше править theory UI, сначала прогонять `npm run theory:scroll`, потому что он ловит обрезание окна.
+
 ### 2026-05-12 — Codex — installer rebuild and git publish
 
 **Request:** запушить изменения в git, обновить Windows installer и обновить его в GitHub.
