@@ -340,7 +340,6 @@ const els = {
   authOverlay:    document.getElementById('authOverlay'),
   authOpenBtn:    document.getElementById('authOpenBtn'),
   authUserBar:    document.getElementById('authUserBar'),
-  authUserEmail:  document.getElementById('authUserEmail'),
   authSyncDot:    document.getElementById('authSyncDot'),
   authTabLogin:   document.getElementById('authTabLogin'),
   authTabRegister:document.getElementById('authTabRegister'),
@@ -438,9 +437,9 @@ function applyProductPositioning() {
 
   applyText(els.kernelStatus, 'JavaScript активно');
   applyText(els.generateTaskBtn, 'Начать тренировку');
-  applyText(els.reviewChallengeBtn, 'Повторить слабое место');
-  applyText(els.dailyChallengeBtn, 'Ежедневная сессия');
-  applyText(els.bossChallengeBtn, 'Сложное испытание');
+  applyText(els.reviewChallengeBtn, 'Слабое место');
+  applyText(els.dailyChallengeBtn, 'Ежедневная');
+  applyText(els.bossChallengeBtn, 'Испытание');
   applyText(els.taskCategoryBadge, 'Категория');
   applyText(els.taskDifficultyBadge, 'Сложность');
   applyText(els.taskModeBadge, 'Режим');
@@ -516,7 +515,7 @@ function ensureTheoryShell() {
       const theoryButton = document.createElement('button');
       theoryButton.id = 'openTheoryBtn';
       theoryButton.type = 'button';
-      theoryButton.className = 'button button-secondary';
+      theoryButton.className = 'button button-secondary button-quiet';
       theoryButton.textContent = `Теория ${ACTIVE_KERNEL_INFO.title || ACTIVE_KERNEL_ID}`;
       heroActions.insertBefore(theoryButton, nextTaskBtn || null);
     }
@@ -563,6 +562,44 @@ function ensureTheoryShell() {
   els.theoryCloseBtn = document.getElementById('theoryCloseBtn');
   els.theoryNav = document.getElementById('theoryNav');
   els.theoryContent = document.getElementById('theoryContent');
+}
+
+function closeOverflowMenus(except = null) {
+  document.querySelectorAll('.overflow-menu[open]').forEach((menu) => {
+    if (menu !== except) {
+      menu.removeAttribute('open');
+    }
+  });
+}
+
+function bindOverflowMenus() {
+  const menus = document.querySelectorAll('.overflow-menu');
+  if (!menus.length) return;
+
+  menus.forEach((menu) => {
+    menu.addEventListener('toggle', () => {
+      if (menu.open) closeOverflowMenus(menu);
+    });
+
+    menu.querySelectorAll('.overflow-menu-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        window.setTimeout(() => menu.removeAttribute('open'), 0);
+      });
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target?.closest('.overflow-menu')) {
+      closeOverflowMenus();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeOverflowMenus();
+    }
+  });
 }
 
 async function loadTheoryModule() {
@@ -2901,10 +2938,8 @@ function setAuthMode(mode) {
 
 function renderAuthStatus() {
   const loggedIn = isLoggedIn();
-  const email    = getStoredEmail();
   if (els.authOpenBtn)  els.authOpenBtn.classList.toggle('hidden', loggedIn);
   if (els.authUserBar)  els.authUserBar.classList.toggle('hidden', !loggedIn);
-  if (els.authUserEmail && email) els.authUserEmail.textContent = email;
   renderUpgradeBtn();
   applyKernelLocks();
 }
@@ -3407,6 +3442,8 @@ async function setupEditorInteractions() {
 }
 
 function setupControlListeners() {
+  bindOverflowMenus();
+
   if (els.kernelSelect) {
     els.kernelSelect.addEventListener('change', () => {
       const nextKernelId = els.kernelSelect.value;
@@ -3588,6 +3625,8 @@ function setupControlListeners() {
         await importProgressFromFile(file);
       } catch (error) {
         setRunStatus(error.message || 'Не удалось импортировать прогресс.', 'danger');
+      } finally {
+        els.importProgressInput.value = '';
       }
     });
   }

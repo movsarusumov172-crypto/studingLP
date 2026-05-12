@@ -60,9 +60,14 @@
               <div><span>Рекорд</span><strong id="statFastest">—</strong></div>
               <div><span>Среднее</span><strong id="statAvg">—</strong></div>
             </div>
-            <div class="button-row">
-              <button id="exportProgressBtn" class="button button-secondary" type="button" style="font-size:0.8rem;padding:6px 10px;">Экспорт прогресса</button>
-              <button id="importProgressBtn" class="button button-secondary" type="button" style="font-size:0.8rem;padding:6px 10px;">Импорт прогресса</button>
+            <div class="button-row profile-utility-row">
+              <details class="overflow-menu">
+                <summary class="button button-secondary more-menu-trigger" aria-label="Дополнительные действия профиля" title="Дополнительные действия">⋯</summary>
+                <div class="overflow-menu-panel">
+                  <button id="exportProgressBtn" class="button button-secondary overflow-menu-item" type="button">Экспорт прогресса</button>
+                  <button id="importProgressBtn" class="button button-secondary overflow-menu-item" type="button">Импорт прогресса</button>
+                </div>
+              </details>
               <input id="importProgressInput" class="hidden" type="file" accept=".json,application/json" />
             </div>
 
@@ -71,9 +76,14 @@
               <div id="authUserBar" class="auth-user-bar hidden">
                 <span class="auth-sync-dot" id="authSyncDot" title="Синхронизация"></span>
                 <button id="accountOpenBtn" class="button button-secondary auth-account-btn" type="button">☁ Аккаунт</button>
-                <button id="leaderboardOpenBtn" class="button button-secondary auth-icon-btn" type="button" title="Лидерборд">⊞</button>
+                <details class="overflow-menu auth-overflow-menu">
+                  <summary class="button button-secondary more-menu-trigger auth-icon-btn" aria-label="Дополнительные действия аккаунта" title="Дополнительно">⋯</summary>
+                  <div class="overflow-menu-panel">
+                    <button id="leaderboardOpenBtn" class="button button-secondary overflow-menu-item" type="button">Лидерборд</button>
+                    <button id="upgradeOpenBtn" class="button button-primary overflow-menu-item hidden" type="button">★ Pro — $6/мес</button>
+                  </div>
+                </details>
               </div>
-              <button id="upgradeOpenBtn" class="button button-primary upgrade-open-btn hidden" type="button">★ Pro — $6/мес</button>
             </div>
 
             <section class="skill-graph-panel compact">
@@ -174,11 +184,13 @@
             <input id="autoHintCheckbox" type="checkbox" />
             <span>Автоподсказка после 2 ошибок</span>
           </label>
-          <div class="button-stack">
-            <button id="generateTaskBtn" class="button button-primary" type="button">Начать тренировку</button>
-            <button id="reviewChallengeBtn" class="button button-secondary" type="button">Повторить слабое место</button>
-            <button id="dailyChallengeBtn" class="button button-secondary" type="button">Ежедневная сессия</button>
-            <button id="bossChallengeBtn" class="button button-secondary" type="button">Сложное испытание</button>
+          <div class="button-stack training-actions">
+            <button id="generateTaskBtn" class="button button-primary main-action-btn" type="button">Начать тренировку</button>
+            <div class="training-mode-strip" aria-label="Дополнительные режимы тренировки">
+              <button id="reviewChallengeBtn" class="button button-secondary button-quiet mode-chip" type="button">Слабое место</button>
+              <button id="dailyChallengeBtn" class="button button-secondary button-quiet mode-chip" type="button">Ежедневная</button>
+              <button id="bossChallengeBtn" class="button button-secondary button-quiet mode-chip" type="button">Испытание</button>
+            </div>
           </div>
         </section>
 
@@ -213,11 +225,16 @@
             <label><span>Тесты JSON</span><textarea id="customTests" rows="7"></textarea></label>
             <label><span>Подсказки</span><textarea id="customHints" rows="3"></textarea></label>
             <label><span>Разбор</span><textarea id="customExplanation" rows="4"></textarea></label>
-            <div class="button-row">
-              <button id="fillTemplateBtn" class="button button-secondary" type="button">Шаблон</button>
-              <button id="saveCustomTaskBtn" class="button button-primary" type="submit">Сохранить</button>
-              <button id="exportCustomTasksBtn" class="button button-secondary" type="button">Экспорт JSON</button>
-              <button id="importCustomTasksBtn" class="button button-secondary" type="button">Импорт JSON</button>
+            <div class="button-row form-action-row">
+              <button id="saveCustomTaskBtn" class="button button-primary main-action-btn" type="submit">Сохранить</button>
+              <details class="overflow-menu drop-up">
+                <summary class="button button-secondary more-menu-trigger" aria-label="Дополнительные действия своей задачи" title="Дополнительно">⋯</summary>
+                <div class="overflow-menu-panel">
+                  <button id="fillTemplateBtn" class="button button-secondary overflow-menu-item" type="button">Шаблон</button>
+                  <button id="exportCustomTasksBtn" class="button button-secondary overflow-menu-item" type="button">Экспорт JSON</button>
+                  <button id="importCustomTasksBtn" class="button button-secondary overflow-menu-item" type="button">Импорт JSON</button>
+                </div>
+              </details>
               <input id="customTasksImportInput" class="hidden" type="file" accept=".json,application/json" />
             </div>
           </form>
@@ -236,11 +253,17 @@
               <h2>Практика JavaScript без конца</h2>
             </div>
             <div class="hero-actions">
-              <button id="resetCodeBtn" class="button button-secondary" type="button">Сбросить код</button>
-              <button id="copyStarterBtn" class="button button-secondary" type="button">Скопировать шаблон</button>
-              <button id="showHintBtn" class="button button-secondary" type="button">Подсказка</button>
-              <button id="showAnswerBtn" class="button button-secondary" type="button">Ответ</button>
+              <button id="showHintBtn" class="button button-secondary button-quiet" type="button">Подсказка</button>
               <button id="nextTaskBtn" class="button button-secondary" type="button">Следующая</button>
+              <details class="overflow-menu hero-overflow-menu">
+                <summary class="button button-secondary more-menu-trigger" aria-label="Дополнительные действия задачи" title="Дополнительно">⋯</summary>
+                <div class="overflow-menu-panel">
+                  <button id="resetCodeBtn" class="button button-secondary overflow-menu-item" type="button">Сбросить код</button>
+                  <button id="copyStarterBtn" class="button button-secondary overflow-menu-item" type="button">Скопировать шаблон</button>
+                  <button id="showAnswerBtn" class="button button-secondary overflow-menu-item" type="button">Ответ</button>
+                  <button id="shareSeedBtn" class="button button-secondary overflow-menu-item" type="button">Скопировать seed</button>
+                </div>
+              </details>
             </div>
           </div>
           <!-- Session progress bar — visible only during smart session -->
@@ -260,7 +283,6 @@
             <span id="taskTrustBadge" class="badge badge-soft">QA</span>
             <span id="taskModeBadge" class="badge badge-soft">Режим</span>
             <span id="taskSkillBadge" class="badge badge-skill hidden"></span>
-            <button id="shareSeedBtn" class="badge badge-share" type="button" title="Скопировать seed задачи">⌗ seed</button>
           </div>
           <h1 id="taskTitle">Генерация задачи...</h1>
           <p id="taskPrompt" class="task-prompt">Здесь появится условие задачи.</p>

@@ -397,3 +397,108 @@ custom_tasks:  нет
 - Railway token: в Windows Credential Manager (git credential)
 - Neon credentials: в `server/.env` (не в git)
 - JWT secrets: сгенерированы случайно, хранятся в Railway + `server/.env`
+
+---
+
+## Change Log
+
+Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
+
+### 2026-05-12 — Codex — installer rebuild and git publish
+
+**Request:** запушить изменения в git, обновить Windows installer и обновить его в GitHub.
+
+**Changed files:**
+- `README.md`
+- `studingJS/src/renderer/app.js`
+- `studingJS/src/renderer/index.html`
+- `studingJS/src/renderer/styles.css`
+
+**What changed:**
+- Подготовлены UI-правки к публикации: overflow-меню, focus states, drop-up menu, cleanup `authUserEmail`, стабильный повторный импорт прогресса.
+- Собран свежий Windows installer `studingJS/dist/JS Infinite Trainer Setup 1.0.0.exe`; `dist/` остается ignored и предназначен для GitHub Releases.
+
+**Verification:**
+- `npm run dist` — passed, installer rebuilt.
+- `Get-FileHash -Algorithm SHA256 studingJS/dist/JS Infinite Trainer Setup 1.0.0.exe` — `BC610285782EAD2AEAA4210780FE6F7CE5C7656FB085E33FC5174C12FE5CE9E6`.
+- `git diff --check -- README.md studingJS/src/renderer/app.js studingJS/src/renderer/index.html studingJS/src/renderer/styles.css` — passed; Git показал только CRLF warning.
+- duplicate `id` check for `studingJS/src/renderer/index.html` — passed.
+- `Select-String ... authUserEmail` — no matches.
+- `node --check src/renderer/app.js` — passed.
+- `npm run smoke` — passed, 200 generated tasks.
+
+**Coordination notes:**
+- `gh` установлен, но не авторизован (`gh auth status` просит `gh auth login`), поэтому GitHub Release upload требует отдельной авторизации перед публикацией `.exe` как release asset.
+- Не force-add `studingJS/dist/` в git: это build output, он игнорируется `studingJS/.gitignore` и по README должен жить в GitHub Releases.
+
+### 2026-05-12 — Codex — follow-up UI audit fixes
+
+**Request:** раздать агентам четыре найденных пункта по UI-аудиту и исправить каждый в своей зоне.
+
+**Changed files:**
+- `README.md`
+- `studingJS/src/renderer/app.js`
+- `studingJS/src/renderer/index.html`
+- `studingJS/src/renderer/styles.css`
+
+**What changed:**
+- `importProgressInput` теперь очищается в `finally`, чтобы повторный выбор того же файла сработал после ошибки импорта.
+- Удалена мертвая привязка `authUserEmail`; email остается доступен через окно аккаунта.
+- Добавлен видимый `focus-visible` для кнопок и пунктов overflow-меню.
+- Нижнее меню формы своей задачи открывается вверх через `drop-up`, чтобы меньше рисковать обрезанием в скролл-зоне.
+
+**Verification:**
+- `git diff --check -- README.md studingJS/src/renderer/app.js studingJS/src/renderer/index.html studingJS/src/renderer/styles.css` — passed; Git показал только CRLF warning.
+- duplicate `id` check for `studingJS/src/renderer/index.html` — passed.
+- `Select-String ... authUserEmail` — no matches.
+- `node --check src/renderer/app.js` — passed.
+- `npm run smoke` — passed, 200 generated tasks.
+
+**Coordination notes:**
+- Изменения делались тремя агентами по зонам: импорт прогресса, UI focus/drop-up, cleanup `authUserEmail`.
+- Claude Code: если будешь продолжать overflow-меню, используй существующие классы `overflow-menu`, `overflow-menu-panel`, `drop-up`, а не создавай второй паттерн меню.
+
+### 2026-05-11 — Codex — quieter UI actions
+
+**Request:** уменьшить визуальный шум от множества кнопок: важные оставить на виду, редкие убрать в меню с тремя точками.
+
+**Changed files:**
+- `README.md`
+- `studingJS/src/renderer/index.html`
+- `studingJS/src/renderer/styles.css`
+- `studingJS/src/renderer/app.js`
+
+**What changed:**
+- Основные действия оставлены на экране, а экспорт/импорт, ответ, сброс, копирование шаблона, seed, лидерборд и Pro перенесены в `⋯`.
+- Режимы тренировки стали компактными тихими кнопками, без длинной визуальной простыни.
+- Добавлен общий обработчик overflow-меню: закрытие при выборе действия, клике снаружи и Escape.
+
+**Verification:**
+- `git diff --check -- studingJS/src/renderer/index.html studingJS/src/renderer/styles.css studingJS/src/renderer/app.js` — passed; Git показал только CRLF warning.
+- duplicate `id` check for `studingJS/src/renderer/index.html` — passed.
+- `node --check src/renderer/app.js` — passed.
+- `npm run smoke` — passed, 200 generated tasks.
+
+**Coordination notes:**
+- `id` существующих кнопок сохранены, поэтому старые обработчики событий продолжают работать.
+- Claude Code: если будешь трогать эти зоны UI, не дублируй кнопки; лучше расширять существующие `overflow-menu`.
+
+### 2026-05-11 — Codex — skill for README logging
+
+**Request:** создать личный скилл Codex, который будет записывать будущие изменения в README для общей координации.
+
+**Changed files:**
+- `README.md`
+- `C:/Users/SKM/.codex/skills/logging-project-changes/SKILL.md`
+- `C:/Users/SKM/.codex/skills/logging-project-changes/agents/openai.yaml`
+
+**What changed:**
+- Добавлен раздел `Change Log` в существующий корневой README.
+- Создан личный скилл `logging-project-changes`, который требует после будущих правок обновлять этот раздел.
+- Удален отдельный `README_CHANGES.md`, потому что в проекте уже есть основной README.
+
+**Verification:**
+- `quick_validate.py logging-project-changes` — passed.
+
+**Coordination notes:**
+- Дальше Codex должен писать свои изменения сюда, в `README.md`, а не создавать отдельный файл журнала.
