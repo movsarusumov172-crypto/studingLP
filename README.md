@@ -421,6 +421,7 @@ custom_tasks:  нет
 **Verification:**
 - `npm run dist` — passed, installer rebuilt.
 - `Get-FileHash -Algorithm SHA256 studingJS/dist/JS Infinite Trainer Setup 1.0.0.exe` — `BC610285782EAD2AEAA4210780FE6F7CE5C7656FB085E33FC5174C12FE5CE9E6`.
+- GitHub Release `v1.0.0` upload via GitHub API — passed; updated `JS.Infinite.Trainer.Setup.1.0.0.exe` and `JS.Infinite.Trainer.Setup.1.0.0.exe.blockmap`.
 - `git diff --check -- README.md studingJS/src/renderer/app.js studingJS/src/renderer/index.html studingJS/src/renderer/styles.css` — passed; Git показал только CRLF warning.
 - duplicate `id` check for `studingJS/src/renderer/index.html` — passed.
 - `Select-String ... authUserEmail` — no matches.
@@ -428,7 +429,8 @@ custom_tasks:  нет
 - `npm run smoke` — passed, 200 generated tasks.
 
 **Coordination notes:**
-- `gh` установлен, но не авторизован (`gh auth status` просит `gh auth login`), поэтому GitHub Release upload требует отдельной авторизации перед публикацией `.exe` как release asset.
+- `gh` установлен, но не авторизован; для этого upload использован GitHub API через сохраненные git credentials.
+- На будущее проще выполнить `gh auth login`, чтобы обновлять GitHub Releases обычной командой `gh release upload`.
 - Не force-add `studingJS/dist/` в git: это build output, он игнорируется `studingJS/.gitignore` и по README должен жить в GitHub Releases.
 
 ### 2026-05-12 — Codex — follow-up UI audit fixes
