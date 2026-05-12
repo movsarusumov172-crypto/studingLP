@@ -1923,16 +1923,299 @@ function buildGeneratedTask(category, difficulty, rng) {
   }
 }
 
+function withPracticeTopic(task, topicId, topicTitle) {
+  task.meta = {
+    ...task.meta,
+    practiceTopicId: topicId,
+    practiceTopicTitle: topicTitle
+  };
+  task.tags = unique([...(Array.isArray(task.tags) ? task.tags : []), 'theory-practice', `topic:${topicId}`]);
+  return task;
+}
+
+function buildGoTopicTask(topicId, topicTitle, difficulty, rng, seed) {
+  const title = topicTitle || topicId;
+  const common = {
+    difficulty: normalizeDifficulty(difficulty),
+    seed: `${seed}:topic:${topicId}`,
+    meta: {
+      practiceTopicId: topicId,
+      practiceTopicTitle: title
+    },
+    tags: ['theory-practice', `topic:${topicId}`]
+  };
+
+  switch (topicId) {
+    case 'variables':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'arrays',
+        variationCategory: 'variables',
+        title: 'Zero value fallback',
+        prompt: `Тема "${title}": посчитай сумму, но если срез пустой, верни zero value для int — 0.`,
+        returnType: 'int',
+        argTypes: ['[]int'],
+        argNames: ['values'],
+        starterBody: ['return 0'],
+        solutionBody: ['total := 0', 'for _, value := range values {', '  total += value', '}', 'return total'],
+        tests: [
+          { name: 'values', input: [[2, 4, 6]], expected: 12 },
+          { name: 'empty zero value', input: [[]], expected: 0 },
+          { name: 'negative', input: [[5, -2, 1]], expected: 4 }
+        ],
+        strategy: 'arrays',
+        family: 'variables',
+        logicType: 'zero-value'
+      });
+    case 'functions':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'algorithms',
+        variationCategory: 'functions',
+        title: 'Safe division status',
+        prompt: `Тема "${title}": верни true, если деление a / b безопасно и без остатка; b == 0 должен дать false.`,
+        returnType: 'bool',
+        argTypes: ['int', 'int'],
+        argNames: ['a', 'b'],
+        starterBody: ['return false'],
+        solutionBody: ['if b == 0 {', '  return false', '}', 'return a%b == 0'],
+        tests: [
+          { name: 'divisible', input: [12, 3], expected: true },
+          { name: 'not divisible', input: [10, 4], expected: false },
+          { name: 'division by zero', input: [9, 0], expected: false }
+        ],
+        strategy: 'algorithms',
+        family: 'functions',
+        logicType: 'guard-return'
+      });
+    case 'slices':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'arrays',
+        variationCategory: 'slices',
+        title: 'Append positives',
+        prompt: `Тема "${title}": собери новый срез только из положительных чисел через append и верни его длину.`,
+        returnType: 'int',
+        argTypes: ['[]int'],
+        argNames: ['values'],
+        starterBody: ['return 0'],
+        solutionBody: ['filtered := make([]int, 0, len(values))', 'for _, value := range values {', '  if value > 0 {', '    filtered = append(filtered, value)', '  }', '}', 'return len(filtered)'],
+        tests: [
+          { name: 'mixed', input: [[-1, 2, 0, 5]], expected: 2 },
+          { name: 'none', input: [[0, -3, -4]], expected: 0 },
+          { name: 'all', input: [[1, 2, 3]], expected: 3 }
+        ],
+        strategy: 'arrays',
+        family: 'slices',
+        logicType: 'append-filter'
+      });
+    case 'structs':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'algorithms',
+        variationCategory: 'structs',
+        title: 'Rectangle area via struct',
+        prompt: `Тема "${title}": создай внутри solve struct прямоугольника с полями ширины и высоты и верни площадь.`,
+        returnType: 'int',
+        argTypes: ['int', 'int'],
+        argNames: ['width', 'height'],
+        starterBody: ['return 0'],
+        solutionBody: ['type rect struct {', '  width int', '  height int', '}', 'box := rect{width: width, height: height}', 'return box.width * box.height'],
+        tests: [
+          { name: 'small', input: [3, 4], expected: 12 },
+          { name: 'line', input: [0, 7], expected: 0 },
+          { name: 'square', input: [5, 5], expected: 25 }
+        ],
+        strategy: 'algorithms',
+        family: 'structs',
+        logicType: 'local-struct'
+      });
+    case 'concurrency':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'arrays',
+        variationCategory: 'concurrency',
+        title: 'Channel sum',
+        prompt: `Тема "${title}": отправь числа в channel из goroutine, закрой канал и посчитай сумму через range.`,
+        returnType: 'int',
+        argTypes: ['[]int'],
+        argNames: ['values'],
+        starterBody: ['return 0'],
+        solutionBody: ['ch := make(chan int)', 'go func() {', '  for _, value := range values {', '    ch <- value', '  }', '  close(ch)', '}()', 'total := 0', 'for value := range ch {', '  total += value', '}', 'return total'],
+        tests: [
+          { name: 'basic', input: [[1, 2, 3]], expected: 6 },
+          { name: 'empty', input: [[]], expected: 0 },
+          { name: 'mixed', input: [[5, -2, 7]], expected: 10 }
+        ],
+        strategy: 'arrays',
+        family: 'concurrency',
+        logicType: 'channels'
+      });
+    case 'errors':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'strings',
+        variationCategory: 'errors',
+        title: 'Parse status',
+        prompt: `Тема "${title}": верни true только если текст состоит из ASCII-цифр; пустая строка имитирует ошибку парсинга.`,
+        returnType: 'bool',
+        argTypes: ['string'],
+        argNames: ['text'],
+        starterBody: ['return false'],
+        solutionBody: ['if len(text) == 0 {', '  return false', '}', 'for _, ch := range text {', "  if ch < '0' || ch > '9' {", '    return false', '  }', '}', 'return true'],
+        tests: [
+          { name: 'digits', input: ['2048'], expected: true },
+          { name: 'empty', input: [''], expected: false },
+          { name: 'bad char', input: ['12a'], expected: false }
+        ],
+        strategy: 'strings',
+        family: 'errors',
+        logicType: 'validation-error'
+      });
+    case 'interfaces':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'algorithms',
+        variationCategory: 'interfaces',
+        title: 'Interface dispatch',
+        prompt: `Тема "${title}": положи значение в переменную типа any и достань int через type switch, как при работе с интерфейсами.`,
+        returnType: 'int',
+        argTypes: ['int'],
+        argNames: ['value'],
+        starterBody: ['return 0'],
+        solutionBody: ['var boxed any = value', 'switch typed := boxed.(type) {', 'case int:', '  return typed', 'default:', '  return 0', '}'],
+        tests: [
+          { name: 'positive', input: [7], expected: 7 },
+          { name: 'zero', input: [0], expected: 0 },
+          { name: 'negative', input: [-3], expected: -3 }
+        ],
+        strategy: 'algorithms',
+        family: 'interfaces',
+        logicType: 'interface-contract'
+      });
+    case 'defer-panic-recover':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'algorithms',
+        variationCategory: 'defer-panic-recover',
+        title: 'Deferred cleanup count',
+        prompt: `Тема "${title}": имитируй cleanup: если операция успешна, верни количество cleanup-действий, которые должны выполниться через defer.`,
+        returnType: 'int',
+        argTypes: ['bool', 'int'],
+        argNames: ['ok', 'cleanupCount'],
+        starterBody: ['return 0'],
+        solutionBody: ['if !ok {', '  return 0', '}', 'return cleanupCount'],
+        tests: [
+          { name: 'success', input: [true, 2], expected: 2 },
+          { name: 'failure', input: [false, 3], expected: 0 },
+          { name: 'none', input: [true, 0], expected: 0 }
+        ],
+        strategy: 'algorithms',
+        family: 'defer',
+        logicType: 'cleanup'
+      });
+    case 'packages-modules':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'strings',
+        variationCategory: 'packages-modules',
+        title: 'Exported names',
+        prompt: `Тема "${title}": посчитай имена, экспортируемые из пакета Go: первая буква A-Z означает public API.`,
+        returnType: 'int',
+        argTypes: ['[]string'],
+        argNames: ['names'],
+        starterBody: ['return 0'],
+        solutionBody: ['count := 0', 'for _, name := range names {', "  if len(name) > 0 && name[0] >= 'A' && name[0] <= 'Z' {", '    count += 1', '  }', '}', 'return count'],
+        tests: [
+          { name: 'mixed', input: [['NewUser', 'repo', 'Load']], expected: 2 },
+          { name: 'private', input: [['save', 'load']], expected: 0 },
+          { name: 'empty name', input: [['', 'API']], expected: 1 }
+        ],
+        strategy: 'strings',
+        family: 'packages',
+        logicType: 'export-rule'
+      });
+    case 'context-cancellation':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'arrays',
+        variationCategory: 'context-cancellation',
+        title: 'Stop on cancellation budget',
+        prompt: `Тема "${title}": как с ctx.Done(), останови обработку, когда накопленная сумма превысила limit, и верни обработанную сумму до остановки.`,
+        returnType: 'int',
+        argTypes: ['[]int', 'int'],
+        argNames: ['values', 'limit'],
+        starterBody: ['return 0'],
+        solutionBody: ['total := 0', 'for _, value := range values {', '  if total+value > limit {', '    return total', '  }', '  total += value', '}', 'return total'],
+        tests: [
+          { name: 'cancel early', input: [[3, 4, 5], 7], expected: 7 },
+          { name: 'all fit', input: [[1, 2, 3], 10], expected: 6 },
+          { name: 'first too big', input: [[9, 1], 5], expected: 0 }
+        ],
+        strategy: 'arrays',
+        family: 'context',
+        logicType: 'cancellation'
+      });
+    case 'generics':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'maps',
+        variationCategory: 'generics',
+        title: 'Comparable set size',
+        prompt: `Тема "${title}": посчитай размер множества строк через map[string]struct{}, как конкретную версию generic Set[T comparable].`,
+        returnType: 'int',
+        argTypes: ['[]string'],
+        argNames: ['items'],
+        starterBody: ['return 0'],
+        solutionBody: ['set := map[string]struct{}{}', 'for _, item := range items {', '  set[item] = struct{}{}', '}', 'return len(set)'],
+        tests: [
+          { name: 'duplicates', input: [['a', 'b', 'a']], expected: 2 },
+          { name: 'empty', input: [[]], expected: 0 },
+          { name: 'unique', input: [['x', 'y', 'z']], expected: 3 }
+        ],
+        strategy: 'collections',
+        family: 'generics',
+        logicType: 'comparable-set'
+      });
+    case 'testing':
+      return buildGoTaskFromParts({
+        ...common,
+        category: 'arrays',
+        variationCategory: 'testing',
+        title: 'Table test mismatches',
+        prompt: `Тема "${title}": сравни got/want таблицы и верни количество упавших кейсов.`,
+        returnType: 'int',
+        argTypes: ['[]int', '[]int'],
+        argNames: ['got', 'want'],
+        starterBody: ['return 0'],
+        solutionBody: ['limit := len(got)', 'if len(want) < limit {', '  limit = len(want)', '}', 'failed := 0', 'for index := 0; index < limit; index += 1 {', '  if got[index] != want[index] {', '    failed += 1', '  }', '}', 'failed += len(got) - limit', 'failed += len(want) - limit', 'return failed'],
+        tests: [
+          { name: 'one mismatch', input: [[1, 2, 3], [1, 4, 3]], expected: 1 },
+          { name: 'all pass', input: [[2, 5], [2, 5]], expected: 0 },
+          { name: 'length mismatch', input: [[1], [1, 2, 3]], expected: 2 }
+        ],
+        strategy: 'arrays',
+        family: 'testing',
+        logicType: 'table-driven'
+      });
+    default:
+      return null;
+  }
+}
+
 function generateTask(options = {}) {
   const seed = resolveSeed(options);
   const rng = createRng(seed);
   const category = chooseCategory(rng, options);
   const difficulty = chooseDifficulty(rng, options);
-  const task = buildGeneratedTask(category, difficulty, rng);
+  const topicId = typeof options.practiceTopicId === 'string' ? options.practiceTopicId.trim() : '';
+  const topicTitle = typeof options.practiceTopicTitle === 'string' ? options.practiceTopicTitle.trim() : '';
+  const topicTask = topicId ? buildGoTopicTask(topicId, topicTitle, difficulty, rng, seed) : null;
+  const task = topicTask || buildGeneratedTask(category, difficulty, rng);
   const challengeType = options.mode === 'daily' ? 'daily' : options.mode === 'boss' ? 'boss' : 'practice';
   task.challengeType = challengeType;
   task.seed = seed;
-  task.id = makeTaskId(category, difficulty, task.title, seed, GO_KERNEL_META.id);
+  task.id = makeTaskId(task.category || category, task.difficulty || difficulty, task.title, seed, GO_KERNEL_META.id);
   task.meta = {
     ...task.meta,
     challengeType,
@@ -1940,6 +2223,12 @@ function generateTask(options = {}) {
     seed,
     kernelId: GO_KERNEL_META.id
   };
+  if (topicId && task.meta.practiceTopicId === topicId) {
+    withPracticeTopic(task, topicId, topicTitle || task.meta.practiceTopicTitle || topicId);
+  }
+  if (topicTask) {
+    return task;
+  }
 
   const customs = (options.customTasks || [])
     .map(normalizeCustomTask)

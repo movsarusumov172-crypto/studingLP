@@ -59,6 +59,74 @@ const JAVA_KERNEL_META = {
   accent: '#f97316'
 };
 
+const THEORY_TOPIC_PRACTICE = {
+  variables: {
+    category: 'arrays',
+    title: 'Variables and local state',
+    note: 'Practice variables by keeping clear local state while computing the returned value.'
+  },
+  classes: {
+    category: 'collections',
+    title: 'Class-shaped data',
+    note: 'Practice classes by modeling the input as small pieces of state with a clear responsibility.'
+  },
+  collections: {
+    category: 'collections',
+    title: 'Collections',
+    note: 'Practice collections with arrays, lists, maps, sets, sorting, or grouping.'
+  },
+  streams: {
+    category: 'collections',
+    title: 'Stream pipeline',
+    note: 'Practice streams by thinking in filter/map/sort/collect steps before writing the implementation.'
+  },
+  interfaces: {
+    category: 'algorithms',
+    title: 'Interface-shaped contract',
+    note: 'Practice interfaces by keeping the solve method as a small contract with one clear behavior.'
+  },
+  exceptions: {
+    category: 'algorithms',
+    title: 'Exception-safe guards',
+    note: 'Practice exceptions by handling invalid or edge inputs before the main algorithm.'
+  },
+  generics: {
+    category: 'algorithms',
+    title: 'Generic algorithm shape',
+    note: 'Practice generics by writing logic that depends on order and structure rather than one literal case.'
+  },
+  'optional-null-safety': {
+    category: 'strings',
+    title: 'Optional and null-safety',
+    note: 'Practice Optional/null-safety by guarding empty-like text cases and returning a predictable value.'
+  },
+  'concurrency-basics': {
+    category: 'algorithms',
+    title: 'Independent work chunks',
+    note: 'Practice concurrency basics by avoiding shared mutable state and keeping each pass deterministic.'
+  },
+  'records-sealed': {
+    category: 'collections',
+    title: 'Record-style summary',
+    note: 'Practice records and sealed models by producing a stable value-style summary from input data.'
+  },
+  'packages-build': {
+    category: 'arrays',
+    title: 'Buildable utility method',
+    note: 'Practice packages/build by keeping the function self-contained and easy to compile in a utility class.'
+  },
+  annotations: {
+    category: 'algorithms',
+    title: 'Explicit contract annotations',
+    note: 'Practice annotations by making assumptions and return behavior explicit in the code shape.'
+  },
+  'io-files': {
+    category: 'strings',
+    title: 'File-like text parsing',
+    note: 'Practice IO/files by treating the string as file content that needs clean parsing.'
+  }
+};
+
 const NAME_POOL = ['Ada', 'Mila', 'Nina', 'Oleg', 'Leo', 'Sara', 'Ilya', 'Zoe', 'Maks', 'Lina', 'Vera', 'Pavel', 'Rita', 'Artem', 'Noah', 'Iris'];
 const WORD_POOL = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'nova', 'pulse', 'vector', 'lumen', 'mint', 'orbit', 'spark', 'drift', 'tide', 'glow', 'zen', 'flux'];
 const CITY_POOL = ['Berlin', 'Tokyo', 'Oslo', 'Lisbon', 'Prague', 'Riga', 'Milan', 'Helsinki', 'Athens', 'Seoul', 'Rome', 'Paris', 'Madrid', 'Dublin'];
@@ -538,8 +606,16 @@ function makeTask(data) {
   };
 }
 
+function normalizeJavaType(type) {
+  const value = String(type || '').trim();
+  if (value === 'string') return 'String';
+  if (value === 'string[]') return 'String[]';
+  if (value === 'bool') return 'boolean';
+  return value;
+}
+
 function javaTypeDefaultExpression(type) {
-  switch (type) {
+  switch (normalizeJavaType(type)) {
     case 'int':
       return '0';
     case 'boolean':
@@ -565,7 +641,7 @@ function javaEscapeString(value) {
 }
 
 function javaLiteral(value, type) {
-  switch (type) {
+  switch (normalizeJavaType(type)) {
     case 'int':
       return String(Number(value) | 0);
     case 'boolean':
@@ -582,7 +658,7 @@ function javaLiteral(value, type) {
 }
 
 function javaCompareExpression(actualName, expectedName, type) {
-  switch (type) {
+  switch (normalizeJavaType(type)) {
     case 'int':
     case 'boolean':
       return `${actualName} == ${expectedName}`;
@@ -612,7 +688,7 @@ function javaClassCode(signature, bodyLines) {
 }
 
 function buildJavaSignature(returnType, argTypes, argNames) {
-  return `${returnType} solve(${argTypes.map((type, index) => `${type} ${argNames[index] || `arg${index + 1}`}`).join(', ')})`;
+  return `${normalizeJavaType(returnType)} solve(${argTypes.map((type, index) => `${normalizeJavaType(type)} ${argNames[index] || `arg${index + 1}`}`).join(', ')})`;
 }
 
 function buildJavaCustomMeta(meta = {}) {
@@ -667,7 +743,9 @@ function buildTaskFromParts({
   seed = title,
   createdAt = null
 }) {
-  const javaSignature = normalizeJavaSignature(signature, returnType, argTypes, argNames);
+  const normalizedReturnType = normalizeJavaType(returnType);
+  const normalizedArgTypes = argTypes.map(normalizeJavaType);
+  const javaSignature = normalizeJavaSignature(signature, normalizedReturnType, normalizedArgTypes, argNames);
   const variation = buildVariationProfile({
     kernelId: JAVA_KERNEL_META.id,
     category,
@@ -675,8 +753,8 @@ function buildTaskFromParts({
     title,
     prompt,
     signature: javaSignature,
-    returnType,
-    argTypes,
+    returnType: normalizedReturnType,
+    argTypes: normalizedArgTypes,
     argNames,
     strategy,
     tags,
@@ -711,8 +789,8 @@ function buildTaskFromParts({
     createdAt,
     meta: {
       java: {
-        returnType,
-        argTypes: argTypes.slice()
+        returnType: normalizedReturnType,
+        argTypes: normalizedArgTypes.slice()
       },
       ...variation.meta
     }
@@ -2614,10 +2692,40 @@ function chooseDifficulty(rng, options) {
   return rng.pick(pool);
 }
 
+function getKnownPracticeTopic(options = {}) {
+  const topicId = typeof options.practiceTopicId === 'string' ? options.practiceTopicId.trim() : '';
+  if (!topicId || !Object.prototype.hasOwnProperty.call(THEORY_TOPIC_PRACTICE, topicId)) {
+    return null;
+  }
+  return {
+    id: topicId,
+    title: typeof options.practiceTopicTitle === 'string' && options.practiceTopicTitle.trim()
+      ? options.practiceTopicTitle.trim()
+      : THEORY_TOPIC_PRACTICE[topicId].title,
+    spec: THEORY_TOPIC_PRACTICE[topicId]
+  };
+}
+
+function decoratePracticeTopicTask(task, topic) {
+  const meta = task.meta && typeof task.meta === 'object' ? task.meta : {};
+  task.practiceTopicId = topic.id;
+  task.practiceTopicTitle = topic.title;
+  task.title = `${topic.spec.title}: ${task.title}`;
+  task.prompt = `${topic.spec.note}\n\n${task.prompt}`;
+  task.tags = Array.from(new Set([...(Array.isArray(task.tags) ? task.tags : []), 'theory-practice', topic.id]));
+  task.meta = {
+    ...meta,
+    practiceTopicId: topic.id,
+    practiceTopicTitle: topic.title
+  };
+  return task;
+}
+
 function generateTask(options = {}) {
   const seed = resolveSeed(options);
   const rng = createRng(seed);
-  const category = chooseCategory(rng, options);
+  const topic = getKnownPracticeTopic(options);
+  const category = topic ? topic.spec.category : chooseCategory(rng, options);
   const difficulty = chooseDifficulty(rng, options);
   const challengeType = options.mode === 'daily' ? 'daily' : options.mode === 'boss' ? 'boss' : 'practice';
   const standard = buildGeneratedTask(category, difficulty, rng);
@@ -2639,7 +2747,7 @@ function generateTask(options = {}) {
 
   const pool = [standard, ...customs];
   if (pool.length === 1) {
-    return standard;
+    return topic ? decoratePracticeTopicTask(standard, topic) : standard;
   }
 
   const chosen = rng.pick(pool);
@@ -2654,7 +2762,7 @@ function generateTask(options = {}) {
   chosen.kernelId = JAVA_KERNEL_META.id;
   chosen.kernelTitle = JAVA_KERNEL_META.title;
   chosen.editorLanguage = JAVA_KERNEL_META.editorLanguage;
-  return chosen;
+  return topic ? decoratePracticeTopicTask(chosen, topic) : chosen;
 }
 
 function createCustomTaskTemplate() {

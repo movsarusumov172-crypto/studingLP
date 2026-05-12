@@ -73,7 +73,7 @@ export const THEORY_TOPICS = [
       'Знаю records для иммутабельных данных.'
     ],
     practiceHint: 'Задачи на объекты — прямо про классы и интерфейсы.',
-    practiceCategory: 'objects'
+    practiceCategory: 'collections'
   },
   {
     id: 'collections',
@@ -110,7 +110,7 @@ export const THEORY_TOPICS = [
       'Использую List.of/Map.of для immutable.'
     ],
     practiceHint: 'Алгоритмические задачи — через коллекции Java.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'collections'
   },
   {
     id: 'streams',
@@ -148,7 +148,7 @@ export const THEORY_TOPICS = [
       'Умею groupingBy для группировки.'
     ],
     practiceHint: 'Stream API — основной инструмент для задач на массивы в Java.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'collections'
   },
   {
     id: 'interfaces',
@@ -185,7 +185,7 @@ export const THEORY_TOPICS = [
       'Использую Comparator.comparing для сортировки.'
     ],
     practiceHint: 'Функции и замыкания в Java — через лямбды и функциональные интерфейсы.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'exceptions',
@@ -221,7 +221,7 @@ export const THEORY_TOPICS = [
       'Разделяю checked и unchecked exceptions.'
     ],
     practiceHint: 'Ошибки и валидация — хорошая практика для задач на объекты и ввод.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'generics',
@@ -257,7 +257,7 @@ export const THEORY_TOPICS = [
       'Пишу generic methods когда тип зависит от аргументов.'
     ],
     practiceHint: 'Generics чаще всего встречаются в коллекциях и переиспользуемых структурах данных.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'optional-null-safety',
@@ -294,7 +294,7 @@ export const THEORY_TOPICS = [
       'Проверяю обязательные параметры через Objects.requireNonNull.'
     ],
     practiceHint: 'Задачи на поиск и фильтрацию хорошо тренируют Optional вместо null.',
-    practiceCategory: 'functions'
+    practiceCategory: 'strings'
   },
   {
     id: 'concurrency-basics',
@@ -331,7 +331,7 @@ export const THEORY_TOPICS = [
       'Понимаю разницу atomic, synchronized и volatile.'
     ],
     practiceHint: 'Параллельность тренируется на задачах со счётчиками, очередями и async pipeline.',
-    practiceCategory: 'async'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'records-sealed',
@@ -368,7 +368,7 @@ export const THEORY_TOPICS = [
       'Понимаю permits и требования к наследникам sealed.'
     ],
     practiceHint: 'Records удобны в задачах на точки, интервалы, DTO и результаты вычислений.',
-    practiceCategory: 'objects'
+    practiceCategory: 'collections'
   },
   {
     id: 'packages-build',
@@ -406,7 +406,7 @@ export const THEORY_TOPICS = [
       'Не храню артефакты сборки в исходниках.'
     ],
     practiceHint: 'Сборка важна для проектов с несколькими классами, тестами и внешними библиотеками.',
-    practiceCategory: 'objects'
+    practiceCategory: 'arrays'
   },
   {
     id: 'annotations',
@@ -442,7 +442,7 @@ export const THEORY_TOPICS = [
       'Не прячу бизнес-логику в магию аннотаций.'
     ],
     practiceHint: 'Аннотации полезны в задачах на reflection, тестовые фреймворки и конфигурацию.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'io-files',
@@ -479,7 +479,7 @@ export const THEORY_TOPICS = [
       'Указываю кодировку при чтении и записи текста.'
     ],
     practiceHint: 'I/O пригодится для задач на парсинг входных файлов, логов и отчётов.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'strings'
   }
 ];
 

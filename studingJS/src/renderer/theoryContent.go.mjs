@@ -74,7 +74,7 @@ export const THEORY_TOPICS = [
       'Понимаю порядок выполнения defer.'
     ],
     practiceHint: 'Go-задачи часто строятся на функциях с обработкой ошибок.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'slices',
@@ -149,7 +149,7 @@ export const THEORY_TOPICS = [
       'Использую composition через embedding.'
     ],
     practiceHint: 'Задачи на объекты и closures хорошо переносятся на Go structs.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'concurrency',
@@ -188,7 +188,7 @@ export const THEORY_TOPICS = [
       'Знаю select для мультиплексирования.'
     ],
     practiceHint: 'Задачи на async в Go — через каналы и горутины.',
-    practiceCategory: 'async'
+    practiceCategory: 'arrays'
   },
   {
     id: 'errors',
@@ -225,7 +225,7 @@ export const THEORY_TOPICS = [
       'Создаю типизированные ошибки когда нужно передать детали.'
     ],
     practiceHint: 'Большинство Go-задач требуют корректной обработки ошибок.',
-    practiceCategory: 'functions'
+    practiceCategory: 'strings'
   },
   {
     id: 'interfaces',
@@ -263,7 +263,7 @@ export const THEORY_TOPICS = [
       'Проверяю typed nil в ошибках и интерфейсах.'
     ],
     practiceHint: 'Тренируй интерфейсы на задачах с разными источниками данных: строки, файлы, буферы.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'defer-panic-recover',
@@ -300,7 +300,7 @@ export const THEORY_TOPICS = [
       'Использую recover только на границах приложения или worker.'
     ],
     practiceHint: 'Попробуй написать функцию, которая открывает файл, блокирует mutex и гарантированно освобождает оба ресурса.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'packages-modules',
@@ -338,7 +338,7 @@ export const THEORY_TOPICS = [
       'Держу публичный API маленьким.'
     ],
     practiceHint: 'Разбей небольшую программу на main, пакет с логикой и пакет с тестами.',
-    practiceCategory: 'functions'
+    practiceCategory: 'strings'
   },
   {
     id: 'context-cancellation',
@@ -375,7 +375,7 @@ export const THEORY_TOPICS = [
       'Возвращаю ctx.Err() при отмене.'
     ],
     practiceHint: 'Сделай worker pool, который останавливается по timeout и не оставляет горутины висеть.',
-    practiceCategory: 'async'
+    practiceCategory: 'arrays'
   },
   {
     id: 'generics',
@@ -412,7 +412,7 @@ export const THEORY_TOPICS = [
       'Возвращаю zero value корректно для любого T.'
     ],
     practiceHint: 'Перепиши несколько helper-функций для слайсов так, чтобы они работали с любым типом.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'maps'
   },
   {
     id: 'testing',
@@ -450,7 +450,7 @@ export const THEORY_TOPICS = [
       'Запускаю go test ./... перед изменениями в Go-проекте.'
     ],
     practiceHint: 'Возьми любую функцию парсинга или подсчёта и покрой её table-driven тестами.',
-    practiceCategory: 'functions'
+    practiceCategory: 'arrays'
   }
 ];
 

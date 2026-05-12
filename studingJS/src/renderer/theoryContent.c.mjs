@@ -114,7 +114,7 @@ export const THEORY_TOPICS = [
       'Не забываю \\0 в конце строки.'
     ],
     practiceHint: 'Алгоритмы на C — сортировки, поиск, строковые задачи.',
-    practiceCategory: 'algorithms'
+    practiceCategory: 'strings'
   },
   {
     id: 'functions',
@@ -151,7 +151,7 @@ export const THEORY_TOPICS = [
       'Понимаю стековые ограничения рекурсии.'
     ],
     practiceHint: 'Алгоритмы в C требуют понимания функций и указателей одновременно.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'structs',
@@ -187,7 +187,7 @@ export const THEORY_TOPICS = [
       'Умею инициализировать struct через литерал.'
     ],
     practiceHint: 'Задачи на объекты отражают работу со структурами.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'dynamic-memory',
@@ -261,7 +261,7 @@ export const THEORY_TOPICS = [
       'Не использую макрос там, где подходит enum, const или static inline.'
     ],
     practiceHint: 'Разбей маленькую программу на main.c, utils.c и utils.h, затем собери их одной командой gcc.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'file-io',
@@ -336,7 +336,7 @@ export const THEORY_TOPICS = [
       'У union храню отдельный tag, если данные приходят извне или живут долго.'
     ],
     practiceHint: 'Сделай набор прав доступа через битовые флаги: read/write/exec, включение, выключение и проверка.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'compilation-ub',
@@ -373,7 +373,7 @@ export const THEORY_TOPICS = [
       'Не оправдываю UB тем, что пример один раз сработал.'
     ],
     practiceHint: 'Собери маленький проект из двух файлов, специально поймай warning, link error и sanitizer-ошибку.',
-    practiceCategory: 'functions'
+    practiceCategory: 'arrays'
   }
 ];
 

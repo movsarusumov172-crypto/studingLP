@@ -37,7 +37,7 @@ export const THEORY_TOPICS = [
       'Могу деструктурировать объекты и массивы.'
     ],
     practiceHint: 'Попробуй задачи на closures — там видно как let и var ведут себя внутри циклов.',
-    practiceCategory: 'closures'
+    practiceCategory: 'objects'
   },
   {
     id: 'types',
@@ -76,7 +76,7 @@ export const THEORY_TOPICS = [
       'Умею явно приводить типы.'
     ],
     practiceHint: 'Задачи на массивы часто требуют правильного приведения — попробуй filter с числовыми строками.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'functions'
   },
   {
     id: 'functions',
@@ -381,7 +381,7 @@ export const THEORY_TOPICS = [
       'Стараюсь держать зависимости направленными, без циклов.'
     ],
     practiceHint: 'Задачи на функции удобно раскладывать по модулям: чистые helpers, импорт в основной файл и явный export результата.',
-    practiceCategory: 'functions'
+    practiceCategory: 'objects'
   },
   {
     id: 'errors',
@@ -417,7 +417,7 @@ export const THEORY_TOPICS = [
       'Использую finally для очистки ресурсов и флагов.'
     ],
     practiceHint: 'Async-задачи часто требуют обработки ошибок: retry, fallback, allSettled и понятный возврат результата.',
-    practiceCategory: 'async'
+    practiceCategory: 'functions'
   },
   {
     id: 'map-set',
@@ -527,15 +527,15 @@ export const THEORY_TOPICS = [
       'Использую генераторы для ленивых последовательностей и обходов.'
     ],
     practiceHint: 'Задачи на массивы и обход структур можно усложнять генераторами: range, flatten, walk tree.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'algorithms'
   }
 ];
 
 const TOPIC_INDEX = new Map(THEORY_TOPICS.map((t) => [t.id, t]));
 
 const PRACTICE_ROUTES = {
-  variables: 'closures',
-  types: 'arrays',
+  variables: 'objects',
+  types: 'functions',
   functions: 'functions',
   arrays: 'arrays',
   objects: 'objects',
@@ -543,11 +543,11 @@ const PRACTICE_ROUTES = {
   async: 'async',
   dom: 'dom',
   'classes-prototypes': 'objects',
-  modules: 'functions',
-  errors: 'async',
+  modules: 'objects',
+  errors: 'functions',
   'map-set': 'arrays',
   'event-loop': 'async',
-  'iterators-generators': 'arrays'
+  'iterators-generators': 'algorithms'
 };
 
 export function getTheoryTopicById(id) {

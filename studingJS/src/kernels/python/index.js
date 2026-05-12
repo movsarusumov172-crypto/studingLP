@@ -1235,6 +1235,395 @@ function buildPythonTaskMeta(title, category, difficulty, prompt, signature, sta
   });
 }
 
+function topicTraceMeta(topicId, topicTitle, extra = {}) {
+  return {
+    ...extra,
+    practiceTopicId: topicId,
+    practiceTopicTitle: topicTitle
+  };
+}
+
+function buildPythonTopicTask(options = {}) {
+  const topicId = typeof options.practiceTopicId === 'string' ? options.practiceTopicId.trim() : '';
+  const topicTitle = typeof options.practiceTopicTitle === 'string' && options.practiceTopicTitle.trim()
+    ? options.practiceTopicTitle.trim()
+    : topicId;
+  const difficulties = normalizeSelection(options.difficulties, DIFFICULTIES);
+  const difficulty = difficulties.includes(options.focusDifficulty) ? options.focusDifficulty : 'easy';
+  const seed = `${resolveSeed(options)}:${topicId}`;
+
+  const makeTopicTask = (parts) => buildTaskFromParts({
+    ...parts,
+    difficulty,
+    seed,
+    tags: [topicId, ...(parts.tags || [])],
+    meta: topicTraceMeta(topicId, topicTitle, parts.meta)
+  });
+
+  switch (topicId) {
+    case 'variables':
+      return makeTopicTask({
+        category: 'variables',
+        title: 'Переупаковка профиля',
+        prompt: `Практика темы "${topicTitle}". Даны name и age. Сохрани промежуточные значения в переменные и верни строку "name:age".`,
+        signature: 'solve(name, age)',
+        starterBody: ['return ""'],
+        solutionBody: ['label = name.strip()', 'years = int(age)', 'return f"{label}:{years}"'],
+        hints: ['Сохрани очищенное имя в отдельную переменную.', 'age можно привести через int.'],
+        explanation: `${topicTitle}: переменные делают последовательность преобразований явной.`,
+        tests: [
+          { args: [' Mila ', 21], expected: 'Mila:21' },
+          { args: ['Oleg', '18'], expected: 'Oleg:18' }
+        ],
+        strategy: 'simple',
+        tags: ['variables', 'assignment']
+      });
+    case 'types':
+      return makeTopicTask({
+        category: 'variables',
+        title: 'Опиши тип значения',
+        prompt: `Практика темы "${topicTitle}". Верни имя базового типа: bool, int, float, str, list или other.`,
+        signature: 'solve(value)',
+        starterBody: ['return "other"'],
+        solutionBody: [
+          'if isinstance(value, bool):',
+          '    return "bool"',
+          'if isinstance(value, int):',
+          '    return "int"',
+          'if isinstance(value, float):',
+          '    return "float"',
+          'if isinstance(value, str):',
+          '    return "str"',
+          'if isinstance(value, list):',
+          '    return "list"',
+          'return "other"'
+        ],
+        hints: ['bool проверяй до int.', 'isinstance подходит для базовой классификации.'],
+        explanation: `${topicTitle}: в Python bool является подклассом int, порядок проверок важен.`,
+        tests: [
+          { args: [true], expected: 'bool' },
+          { args: [[1, 2]], expected: 'list' }
+        ],
+        strategy: 'simple',
+        tags: ['types', 'isinstance']
+      });
+    case 'conditionals':
+      return makeTopicTask({
+        category: 'conditionals',
+        title: 'Статус доступа',
+        prompt: `Практика темы "${topicTitle}". Верни "deny" для заблокированного пользователя, "adult" для 18+, иначе "minor".`,
+        signature: 'solve(age, blocked)',
+        starterBody: ['return "deny"'],
+        solutionBody: ['if blocked:', '    return "deny"', 'if age >= 18:', '    return "adult"', 'return "minor"'],
+        hints: ['Сначала обработай защитную ветку blocked.', 'После этого проверь возраст.'],
+        explanation: `${topicTitle}: порядок if/elif/else определяет результат.`,
+        tests: [
+          { args: [20, false], expected: 'adult' },
+          { args: [16, true], expected: 'deny' },
+          { args: [15, false], expected: 'minor' }
+        ],
+        strategy: 'simple',
+        tags: ['if', 'guard']
+      });
+    case 'loops':
+      return makeTopicTask({
+        category: 'loops',
+        title: 'Сумма положительных',
+        prompt: `Практика темы "${topicTitle}". Пройди по values циклом и верни сумму только положительных чисел.`,
+        signature: 'solve(values)',
+        starterBody: ['return 0'],
+        solutionBody: ['total = 0', 'for value in values:', '    if value > 0:', '        total += value', 'return total'],
+        hints: ['Нужен аккумулятор total.', 'Увеличивай его только для value > 0.'],
+        explanation: `${topicTitle}: цикл с аккумулятором — базовая техника обхода.`,
+        tests: [
+          { args: [[1, -2, 3, 0]], expected: 4 },
+          { args: [[-5, 10, 2]], expected: 12 }
+        ],
+        strategy: 'simple',
+        tags: ['loop', 'accumulate']
+      });
+    case 'functions':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Вспомогательная функция скидки',
+        prompt: `Практика темы "${topicTitle}". Посчитай итоговые цены после discount_percent через вложенную helper-функцию.`,
+        signature: 'solve(prices, discount_percent)',
+        starterBody: ['return prices'],
+        solutionBody: [
+          'def apply_discount(price):',
+          '    return round(price * (100 - discount_percent) / 100, 2)',
+          'return [apply_discount(price) for price in prices]'
+        ],
+        hints: ['Вынеси формулу в локальную функцию.', 'round(..., 2) стабилизирует деньги.'],
+        explanation: `${topicTitle}: маленькая функция делает трансформацию переиспользуемой.`,
+        tests: [
+          { args: [[100, 50], 10], expected: [90, 45] },
+          { args: [[19.99], 25], expected: [14.99] }
+        ],
+        strategy: 'simple',
+        tags: ['function', 'helper']
+      });
+    case 'lists':
+      return makeTopicTask({
+        category: 'lists',
+        title: 'Срез последних элементов',
+        prompt: `Практика темы "${topicTitle}". Верни последние count элементов списка, не меняя исходный список.`,
+        signature: 'solve(values, count)',
+        starterBody: ['return values'],
+        solutionBody: ['if count <= 0:', '    return []', 'return values[-count:]'],
+        hints: ['Отрицательный индекс берёт элементы с конца.', 'Обработай count <= 0 отдельно.'],
+        explanation: `${topicTitle}: срезы создают новый список без мутации исходного.`,
+        tests: [
+          { args: [[1, 2, 3, 4], 2], expected: [3, 4] },
+          { args: [['a', 'b'], 0], expected: [] }
+        ],
+        strategy: 'collection',
+        tags: ['list', 'slice']
+      });
+    case 'dicts':
+      return makeTopicTask({
+        category: 'dicts',
+        title: 'Счётчик статусов',
+        prompt: `Практика темы "${topicTitle}". По списку заказов верни словарь количества заказов по status.`,
+        signature: 'solve(orders)',
+        starterBody: ['return {}'],
+        solutionBody: ['counts = {}', 'for order in orders:', '    status = order.get("status", "unknown")', '    counts[status] = counts.get(status, 0) + 1', 'return counts'],
+        hints: ['dict.get помогает читать значение с запасным вариантом.', 'counts[status] увеличивается на 1.'],
+        explanation: `${topicTitle}: словарь хорошо подходит для частот и группировок.`,
+        tests: [
+          { args: [[{ status: 'new' }, { status: 'done' }, { status: 'new' }]], expected: { new: 2, done: 1 } },
+          { args: [[{}, { status: 'new' }]], expected: { unknown: 1, new: 1 } }
+        ],
+        strategy: 'collection',
+        tags: ['dict', 'count']
+      });
+    case 'tuples':
+      return makeTopicTask({
+        category: 'lists',
+        title: 'Координата как кортеж',
+        prompt: `Практика темы "${topicTitle}". Дан список точек [x, y]. Верни список кортежей (x, y), где x и y поменяны местами.`,
+        signature: 'solve(points)',
+        starterBody: ['return points'],
+        solutionBody: ['return [(y, x) for x, y in points]'],
+        hints: ['Распакуй пару прямо в for.', 'Круглые скобки создают tuple.'],
+        explanation: `${topicTitle}: кортежи удобны для фиксированных пар значений.`,
+        tests: [
+          { args: [[[1, 2], [3, 4]]], expected: [[2, 1], [4, 3]] },
+          { args: [[[-1, 5]]], expected: [[5, -1]] }
+        ],
+        strategy: 'collection',
+        tags: ['tuple', 'unpack']
+      });
+    case 'strings':
+      return makeTopicTask({
+        category: 'strings',
+        title: 'Нормализация slug',
+        prompt: `Практика темы "${topicTitle}". Убери лишние пробелы, приведи строку к нижнему регистру и замени пробелы дефисами.`,
+        signature: 'solve(text)',
+        starterBody: ['return text'],
+        solutionBody: ['parts = text.strip().lower().split()', 'return "-".join(parts)'],
+        hints: ['split без аргументов схлопывает пробелы.', 'join собирает части через дефис.'],
+        explanation: `${topicTitle}: строковые методы удобно комбинируются в pipeline.`,
+        tests: [
+          { args: ['  Hello   Python  '], expected: 'hello-python' },
+          { args: ['Async Await'], expected: 'async-await' }
+        ],
+        strategy: 'simple',
+        tags: ['string', 'slug']
+      });
+    case 'exceptions':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Безопасный int',
+        prompt: `Практика темы "${topicTitle}". Попробуй преобразовать text в int. Если не получилось, верни None.`,
+        signature: 'solve(text)',
+        starterBody: ['return int(text)'],
+        solutionBody: ['try:', '    return int(text)', 'except ValueError:', '    return None'],
+        hints: ['int бросает ValueError для плохого текста.', 'except должен вернуть запасное значение.'],
+        explanation: `${topicTitle}: try/except переводит ожидаемую ошибку в контролируемый ответ.`,
+        tests: [
+          { args: ['42'], expected: 42 },
+          { args: ['x7'], expected: null }
+        ],
+        strategy: 'simple',
+        tags: ['exception', 'try']
+      });
+    case 'closures':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Замкнутый множитель',
+        prompt: `Практика темы "${topicTitle}". Создай внутреннюю функцию, которая помнит factor, и примени её ко всем numbers.`,
+        signature: 'solve(numbers, factor)',
+        starterBody: ['return numbers'],
+        solutionBody: ['def multiply(value):', '    return value * factor', 'return [multiply(value) for value in numbers]'],
+        hints: ['multiply читает factor из внешней функции.', 'Это и есть замыкание.'],
+        explanation: `${topicTitle}: внутренняя функция сохраняет доступ к переменной factor.`,
+        tests: [
+          { args: [[1, 2, 3], 4], expected: [4, 8, 12] },
+          { args: [[-1, 5], 2], expected: [-2, 10] }
+        ],
+        strategy: 'recursion',
+        tags: ['closure', 'nested-function']
+      });
+    case 'lambda':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Сортировка lambda-ключом',
+        prompt: `Практика темы "${topicTitle}". Отсортируй users по score по убыванию и верни список имён.`,
+        signature: 'solve(users)',
+        starterBody: ['return []'],
+        solutionBody: ['ordered = sorted(users, key=lambda user: user["score"], reverse=True)', 'return [user["name"] for user in ordered]'],
+        hints: ['key принимает функцию.', 'lambda user: user["score"] достаёт поле сортировки.'],
+        explanation: `${topicTitle}: lambda удобна как короткий key/callback.`,
+        tests: [
+          { args: [[{ name: 'Ada', score: 5 }, { name: 'Lin', score: 9 }]], expected: ['Lin', 'Ada'] },
+          { args: [[{ name: 'A', score: 1 }, { name: 'B', score: 1 }]], expected: ['A', 'B'] }
+        ],
+        strategy: 'collection',
+        tags: ['lambda', 'sorted']
+      });
+    case 'imports':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Импорт math.sqrt',
+        prompt: `Практика темы "${topicTitle}". Используй import math внутри функции и верни квадратные корни чисел, округлённые до 2 знаков.`,
+        signature: 'solve(values)',
+        starterBody: ['return values'],
+        solutionBody: ['import math', 'return [round(math.sqrt(value), 2) for value in values]'],
+        hints: ['Импорт можно делать внутри функции.', 'math.sqrt возвращает float.'],
+        explanation: `${topicTitle}: модуль math подключает готовые математические функции.`,
+        tests: [
+          { args: [[4, 9, 2]], expected: [2, 3, 1.41] },
+          { args: [[16]], expected: [4] }
+        ],
+        strategy: 'simple',
+        tags: ['import', 'math']
+      });
+    case 'oop':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Класс Counter',
+        prompt: `Практика темы "${topicTitle}". Создай класс Counter с методом inc и верни результаты трёх вызовов.`,
+        signature: 'solve(start)',
+        starterBody: ['return []'],
+        solutionBody: [
+          'class Counter:',
+          '    def __init__(self, value):',
+          '        self.value = value',
+          '    def inc(self):',
+          '        self.value += 1',
+          '        return self.value',
+          'counter = Counter(start)',
+          'return [counter.inc(), counter.inc(), counter.inc()]'
+        ],
+        hints: ['self.value хранит состояние экземпляра.', 'Метод inc должен вернуть новое значение.'],
+        explanation: `${topicTitle}: объект объединяет состояние и поведение.`,
+        tests: [
+          { args: [0], expected: [1, 2, 3] },
+          { args: [7], expected: [8, 9, 10] }
+        ],
+        strategy: 'simple',
+        tags: ['class', 'oop']
+      });
+    case 'comprehensions-generators':
+      return makeTopicTask({
+        category: 'lists',
+        title: 'Comprehension квадратов',
+        prompt: `Практика темы "${topicTitle}". Верни квадраты только чётных чисел через list comprehension.`,
+        signature: 'solve(values)',
+        starterBody: ['return []'],
+        solutionBody: ['return [value * value for value in values if value % 2 == 0]'],
+        hints: ['Фильтр if можно поставить в конце comprehension.', 'Выражение слева задаёт новый элемент.'],
+        explanation: `${topicTitle}: comprehension совмещает map и filter в одной читаемой строке.`,
+        tests: [
+          { args: [[1, 2, 3, 4]], expected: [4, 16] },
+          { args: [[-2, 5, 6]], expected: [4, 36] }
+        ],
+        strategy: 'collection',
+        tags: ['comprehension', 'filter']
+      });
+    case 'decorators':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'Мини-декоратор результата',
+        prompt: `Практика темы "${topicTitle}". Напиши внутренний декоратор, который оборачивает результат функции в словарь {"result": value}.`,
+        signature: 'solve(value)',
+        starterBody: ['return value'],
+        solutionBody: [
+          'def boxed(fn):',
+          '    def wrapper(arg):',
+          '        return {"result": fn(arg)}',
+          '    return wrapper',
+          '@boxed',
+          'def double(arg):',
+          '    return arg * 2',
+          'return double(value)'
+        ],
+        hints: ['Декоратор принимает функцию и возвращает wrapper.', '@boxed применяет его к double.'],
+        explanation: `${topicTitle}: декоратор меняет поведение функции без изменения её тела.`,
+        tests: [
+          { args: [5], expected: { result: 10 } },
+          { args: [-2], expected: { result: -4 } }
+        ],
+        strategy: 'simple',
+        tags: ['decorator', 'wrapper']
+      });
+    case 'context-managers-files':
+      return makeTopicTask({
+        category: 'strings',
+        title: 'Имитация with-блока',
+        prompt: `Практика темы "${topicTitle}". Даны строки файла. Верни непустые строки без пробелов по краям, как после безопасного чтения через with open(...).`,
+        signature: 'solve(lines)',
+        starterBody: ['return lines'],
+        solutionBody: ['return [line.strip() for line in lines if line.strip()]'],
+        hints: ['strip очищает края строки.', 'Пустые строки можно отфильтровать тем же strip.'],
+        explanation: `${topicTitle}: с файлами часто читают строки и нормализуют их внутри context manager.`,
+        tests: [
+          { args: [['  alpha  ', '', ' beta']], expected: ['alpha', 'beta'] },
+          { args: [[' one ', '   ']], expected: ['one'] }
+        ],
+        strategy: 'collection',
+        tags: ['context-manager', 'files']
+      });
+    case 'typing-dataclasses':
+      return makeTopicTask({
+        category: 'dicts',
+        title: 'Dataclass-подобная задача',
+        prompt: `Практика темы "${topicTitle}". Нормализуй словарь задачи: title обязателен, done по умолчанию False.`,
+        signature: 'solve(raw)',
+        starterBody: ['return raw'],
+        solutionBody: ['return {"title": str(raw["title"]), "done": bool(raw.get("done", False))}'],
+        hints: ['done может отсутствовать.', 'Верни новый словарь с ожидаемыми типами.'],
+        explanation: `${topicTitle}: dataclass фиксирует поля и значения по умолчанию; здесь тренируем ту же модель данных.`,
+        tests: [
+          { args: [{ title: 'Учить Python' }], expected: { title: 'Учить Python', done: false } },
+          { args: [{ title: 123, done: 1 }], expected: { title: '123', done: true } }
+        ],
+        strategy: 'collection',
+        tags: ['typing', 'dataclass']
+      });
+    case 'async-await':
+      return makeTopicTask({
+        category: 'functions',
+        title: 'План async-результатов',
+        prompt: `Практика темы "${topicTitle}". В Python async/await результаты часто собирают после ожидания. Здесь получи список ответов и верни только успешные payload в исходном порядке.`,
+        signature: 'solve(responses)',
+        starterBody: ['return []'],
+        solutionBody: ['return [response["payload"] for response in responses if response.get("ok")]'],
+        hints: ['Отфильтруй ok-ответы.', 'Сохрани порядок исходного списка.'],
+        explanation: `${topicTitle}: после await/gather часто нужна аккуратная обработка успешных результатов.`,
+        tests: [
+          { args: [[{ ok: true, payload: 'user' }, { ok: false, payload: 'posts' }, { ok: true, payload: 'stats' }]], expected: ['user', 'stats'] },
+          { args: [[{ ok: false, payload: 1 }]], expected: [] }
+        ],
+        strategy: 'collection',
+        tags: ['async-await', 'responses']
+      });
+    default:
+      return null;
+  }
+}
+
 function buildListsTask(difficulty, rng) {
   switch (difficulty) {
     case 'easy': {
@@ -2674,6 +3063,18 @@ module.exports = {
     const category = categories.includes(options.focusCategory) && !options.randomMode ? options.focusCategory : rng.pick(categories);
     const difficulty = difficulties.includes(options.focusDifficulty) && !options.randomMode ? options.focusDifficulty : rng.pick(difficulties);
     const challengeType = options.mode === 'daily' ? 'daily' : options.mode === 'boss' ? 'boss' : 'practice';
+    const topicTask = buildPythonTopicTask(options);
+    if (topicTask) {
+      topicTask.challengeType = challengeType;
+      topicTask.meta = {
+        ...topicTask.meta,
+        challengeType,
+        randomMode: options.randomMode !== false,
+        seed: resolveSeed(options)
+      };
+      return topicTask;
+    }
+
     const standard = buildGeneratedTask(category, difficulty, rng);
     standard.challengeType = challengeType;
     standard.meta = {

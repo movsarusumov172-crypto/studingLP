@@ -700,7 +700,7 @@ const PYTHON_THEORY_TOPICS = [
       'Не превращаю короткую запись в головоломку.'
     ],
     practiceHint: 'Теперь попробуй взять список чисел, отфильтровать лишнее и собрать новую коллекцию.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'lists'
   },
   {
     id: 'decorators',
@@ -794,7 +794,7 @@ const PYTHON_THEORY_TOPICS = [
       'Не держу ресурсы открытыми дольше нужного.'
     ],
     practiceHint: 'Теперь попробуй прочитать строки, почистить их и записать результат в другой файл.',
-    practiceCategory: 'functions'
+    practiceCategory: 'strings'
   },
   {
     id: 'typing-dataclasses',
@@ -841,7 +841,7 @@ const PYTHON_THEORY_TOPICS = [
       'Помню про осторожность с изменяемыми значениями по умолчанию.'
     ],
     practiceHint: 'Теперь попробуй описать dataclass для задачи или пользователя и написать функцию с аннотациями.',
-    practiceCategory: 'objects'
+    practiceCategory: 'dicts'
   },
   {
     id: 'async-await',
@@ -889,7 +889,7 @@ const PYTHON_THEORY_TOPICS = [
       'Не смешиваю блокирующие вызовы с async-кодом без необходимости.'
     ],
     practiceHint: 'Теперь попробуй запустить две async-операции параллельно через `asyncio.gather()`.',
-    practiceCategory: 'async'
+    practiceCategory: 'functions'
   }
 ];
 
@@ -909,11 +909,11 @@ const THEORY_PRACTICE_ROUTES = {
   lambda: { practiceCategory: 'functions' },
   imports: { practiceCategory: 'functions' },
   oop: { practiceCategory: 'functions' },
-  'comprehensions-generators': { practiceCategory: 'arrays' },
+  'comprehensions-generators': { practiceCategory: 'lists' },
   decorators: { practiceCategory: 'functions' },
-  'context-managers-files': { practiceCategory: 'functions' },
-  'typing-dataclasses': { practiceCategory: 'objects' },
-  'async-await': { practiceCategory: 'async' }
+  'context-managers-files': { practiceCategory: 'strings' },
+  'typing-dataclasses': { practiceCategory: 'dicts' },
+  'async-await': { practiceCategory: 'functions' }
 };
 
 function escapeHtml(value = '') {

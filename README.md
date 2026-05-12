@@ -405,6 +405,59 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
 
+### 2026-05-12 — Codex — topic-aware practice for all theory
+
+**Request:** добавить практические задания под все новые темы теории и ускорить работу через трёх параллельных агентов.
+
+**Changed files:**
+- `README.md`
+- `studingJS/package.json`
+- `studingJS/src/kernels/c/index.js`
+- `studingJS/src/kernels/cpp/index.js`
+- `studingJS/src/kernels/csharp/index.js`
+- `studingJS/src/kernels/go/index.js`
+- `studingJS/src/kernels/java/index.js`
+- `studingJS/src/kernels/js/index.js`
+- `studingJS/src/kernels/python/index.js`
+- `studingJS/src/renderer/theoryContent.c.mjs`
+- `studingJS/src/renderer/theoryContent.cpp.mjs`
+- `studingJS/src/renderer/theoryContent.csharp.mjs`
+- `studingJS/src/renderer/theoryContent.go.mjs`
+- `studingJS/src/renderer/theoryContent.java.mjs`
+- `studingJS/src/renderer/theoryContent.js.mjs`
+- `studingJS/src/renderer/theoryContent.mjs`
+- `studingJS/src/tests/cppCsharpJavaTopicPracticeTest.js`
+- `studingJS/src/tests/goCTopicPracticeTest.js`
+- `studingJS/src/tests/jsPythonTopicPracticeTest.js`
+- `studingJS/src/tests/theoryPracticeContractTest.js`
+
+**What changed:**
+- Каждая из 94 тем теории теперь передаёт `practiceTopicId`/`practiceTopicTitle` в языкoвой generator и получает topic-aware задачу вместо общей случайной практики.
+- Добавлены topic practice paths для JS, Python, Go, C, C++, C#, Java с fallback на старую category-генерацию для неизвестных topic id.
+- Синхронизированы `practiceCategory` в theory modules с фактическими категориями kernels, чтобы кнопка перехода из теории не вела в несуществующую или чужую категорию.
+- Добавлен `npm run theory:practice`, который проверяет все language theory routes, category validity, topic meta и наличие tests.
+
+**Verification:**
+- `npm run theory:practice` — passed, 94 topics.
+- `npm run theory:coverage` — passed, 94 topics across 7 languages.
+- `node src/tests/jsPythonTopicPracticeTest.js` — passed, 14 JS + 19 Python topics with runner checks.
+- `node src/tests/goCTopicPracticeTest.js` — passed, 22 Go/C topics.
+- `node src/tests/cppCsharpJavaTopicPracticeTest.js` — passed, 39 C++/C#/Java topics.
+- `npm run smoke` — passed, 200 generated JS tasks.
+- `npm run tasks:contract` — passed.
+- `npm run go:smoke` — passed.
+- `npm run variation`, `npm run python:variation`, `npm run go:variation`, `npm run csharp:variation`, `npm run java:variation` — passed.
+- `npm run theory:content` — passed.
+- `node --check` for all changed kernels and `theoryPracticeContractTest.js` — passed.
+- `npm run dist` — passed, NSIS installer rebuilt.
+- `Get-FileHash -Algorithm SHA256 studingJS/dist/JS Infinite Trainer Setup 1.0.0.exe` — `21DFFD2A152F0D1DBAE6961947D813F159FF1B614CE23550CB6C3869B14E5225`.
+- GitHub Release `v1.0.0` upload via GitHub API — passed; updated `JS.Infinite.Trainer.Setup.1.0.0.exe` and `JS.Infinite.Trainer.Setup.1.0.0.exe.blockmap`.
+- `git diff --check` — passed; Git reported only CRLF warnings.
+
+**Coordination notes:**
+- Work was split by agents: JS/Python, Go/C, C++/C#/Java. Codex integrated shared route contract, package script, README, verification, git, installer, and release.
+- Claude Code: if adding new theory topics, also add or map a topic-aware practice path and run `npm run theory:practice`; otherwise the bridge should fail before release.
+
 ### 2026-05-12 — Codex — expanded language theory coverage
 
 **Request:** отправить по агенту на каждый язык, расширить теорию почти во всех языках, а в конце проверить самому.

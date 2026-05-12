@@ -59,6 +59,74 @@ const CSHARP_KERNEL_META = {
   accent: '#a78bfa'
 };
 
+const THEORY_TOPIC_PRACTICE = {
+  variables: {
+    category: 'arrays',
+    title: 'Variables and numeric state',
+    note: 'Practice the variables topic by keeping clear local state while transforming the input.'
+  },
+  classes: {
+    category: 'collections',
+    title: 'Class-shaped domain data',
+    note: 'Practice classes by treating each input item as data that could live behind a small model type.'
+  },
+  collections: {
+    category: 'collections',
+    title: 'Collections',
+    note: 'Practice collections with arrays, dictionaries, grouping, or sorted summaries.'
+  },
+  linq: {
+    category: 'collections',
+    title: 'LINQ-style projection',
+    note: 'Practice LINQ by solving the task as a filter/map/group/order pipeline.'
+  },
+  async: {
+    category: 'algorithms',
+    title: 'Async result composition',
+    note: 'Practice async thinking by isolating pure work that could safely run after awaited input arrives.'
+  },
+  'nullable-references': {
+    category: 'strings',
+    title: 'Nullable-safe string handling',
+    note: 'Practice nullable references by guarding empty or missing-like text cases before processing.'
+  },
+  records: {
+    category: 'collections',
+    title: 'Record-like immutable summary',
+    note: 'Practice records by building a stable value-style result from the input data.'
+  },
+  'pattern-matching': {
+    category: 'algorithms',
+    title: 'Pattern matching decisions',
+    note: 'Practice pattern matching by making each branch explicit and easy to read.'
+  },
+  'delegates-events': {
+    category: 'algorithms',
+    title: 'Delegate-shaped rule',
+    note: 'Practice delegates and events by expressing the core decision as a reusable rule.'
+  },
+  exceptions: {
+    category: 'algorithms',
+    title: 'Exception-safe guards',
+    note: 'Practice exceptions by validating edge cases before the main algorithm.'
+  },
+  'di-async-streams': {
+    category: 'collections',
+    title: 'Stream-friendly processing',
+    note: 'Practice DI and async streams by keeping the transformation incremental and dependency-light.'
+  },
+  generics: {
+    category: 'algorithms',
+    title: 'Generic method thinking',
+    note: 'Practice generics by writing an algorithm that depends on structure rather than one hard-coded value.'
+  },
+  'files-disposable': {
+    category: 'strings',
+    title: 'Disposable resource parsing',
+    note: 'Practice files and IDisposable by treating the string as file-like content that must be parsed cleanly.'
+  }
+};
+
 const WORD_POOL = [
   'alpha', 'beta', 'gamma', 'delta', 'omega', 'nova', 'pulse', 'vector',
   'lumen', 'mint', 'orbit', 'spark', 'drift', 'tide', 'glow', 'zen', 'flux'
@@ -700,6 +768,7 @@ function csharpClassCode(signature, bodyLines) {
     'using System;',
     'using System.Collections.Generic;',
     'using System.Linq;',
+    'using System.Text;',
     '',
     'public static class Solution',
     '{',
@@ -2640,12 +2709,43 @@ function buildGeneratedTask(rng, category, difficulty, seed) {
   }
 }
 
+function getKnownPracticeTopic(options = {}) {
+  const topicId = typeof options.practiceTopicId === 'string' ? options.practiceTopicId.trim() : '';
+  if (!topicId || !Object.prototype.hasOwnProperty.call(THEORY_TOPIC_PRACTICE, topicId)) {
+    return null;
+  }
+  return {
+    id: topicId,
+    title: typeof options.practiceTopicTitle === 'string' && options.practiceTopicTitle.trim()
+      ? options.practiceTopicTitle.trim()
+      : THEORY_TOPIC_PRACTICE[topicId].title,
+    spec: THEORY_TOPIC_PRACTICE[topicId]
+  };
+}
+
+function decoratePracticeTopicTask(task, topic) {
+  const meta = task.meta && typeof task.meta === 'object' ? task.meta : {};
+  task.practiceTopicId = topic.id;
+  task.practiceTopicTitle = topic.title;
+  task.title = `${topic.spec.title}: ${task.title}`;
+  task.prompt = `${topic.spec.note}\n\n${task.prompt}`;
+  task.tags = Array.from(new Set([...(Array.isArray(task.tags) ? task.tags : []), 'theory-practice', topic.id]));
+  task.meta = {
+    ...meta,
+    practiceTopicId: topic.id,
+    practiceTopicTitle: topic.title
+  };
+  return task;
+}
+
 function generateTask(options = {}) {
   const seed = resolveSeed(options);
   const rng = createRng(seed);
-  const category = chooseCategory(rng, options);
+  const topic = getKnownPracticeTopic(options);
+  const category = topic ? topic.spec.category : chooseCategory(rng, options);
   const difficulty = chooseDifficulty(rng, options);
-  return buildGeneratedTask(rng, category, difficulty, seed);
+  const task = buildGeneratedTask(rng, category, difficulty, seed);
+  return topic ? decoratePracticeTopicTask(task, topic) : task;
 }
 
 function getDotnetCandidates() {

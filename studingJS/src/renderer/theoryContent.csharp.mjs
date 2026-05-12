@@ -74,7 +74,7 @@ export const THEORY_TOPICS = [
       'Понимаю sealed классы.'
     ],
     practiceHint: 'Задачи на объекты и структуры данных.',
-    practiceCategory: 'objects'
+    practiceCategory: 'collections'
   },
   {
     id: 'collections',
@@ -109,7 +109,7 @@ export const THEORY_TOPICS = [
       'Умею foreach безопасно.'
     ],
     practiceHint: 'Задачи на массивы и алгоритмы — через коллекции C#.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'collections'
   },
   {
     id: 'linq',
@@ -148,7 +148,7 @@ export const THEORY_TOPICS = [
       'Материализую через ToList() когда нужно.'
     ],
     practiceHint: 'LINQ — прямой путь к задачам на массивы и объекты.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'collections'
   },
   {
     id: 'async',
@@ -184,7 +184,7 @@ export const THEORY_TOPICS = [
       'Знаю Task.WhenAll для параллельности.'
     ],
     practiceHint: 'Задачи на async — параллелизм, retry, pipeline.',
-    practiceCategory: 'async'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'nullable-references',
@@ -222,7 +222,7 @@ export const THEORY_TOPICS = [
       'Использую ! только когда инвариант доказан вне анализатора.'
     ],
     practiceHint: 'Тренируй безопасные проверки null на объектах и входных данных.',
-    practiceCategory: 'objects'
+    practiceCategory: 'strings'
   },
   {
     id: 'records',
@@ -259,7 +259,7 @@ export const THEORY_TOPICS = [
       'Использую with вместо мутации объекта.'
     ],
     practiceHint: 'Задачи на объекты удобно решать через маленькие records.',
-    practiceCategory: 'objects'
+    practiceCategory: 'collections'
   },
   {
     id: 'pattern-matching',
@@ -333,7 +333,7 @@ export const THEORY_TOPICS = [
       'Помню про отписку от долгоживущих событий.'
     ],
     practiceHint: 'Делегаты помогают в задачах на функции, фильтры и callbacks.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'exceptions',
@@ -371,7 +371,7 @@ export const THEORY_TOPICS = [
       'Не скрываю исключения без логирования или результата.'
     ],
     practiceHint: 'Практикуй валидацию, обработку файлов и сетевых ошибок.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'di-async-streams',
@@ -408,7 +408,7 @@ export const THEORY_TOPICS = [
       'Передаю CancellationToken в потоковые операции.'
     ],
     practiceHint: 'Тренируй сервисы, мокируемые зависимости и async pipeline.',
-    practiceCategory: 'async'
+    practiceCategory: 'collections'
   },
   {
     id: 'generics',
@@ -483,7 +483,7 @@ export const THEORY_TOPICS = [
       'Не держу файл открытым дольше нужного.'
     ],
     practiceHint: 'Практикуй чтение файлов, потоковую обработку и cleanup ресурсов.',
-    practiceCategory: 'async'
+    practiceCategory: 'strings'
   }
 ];
 

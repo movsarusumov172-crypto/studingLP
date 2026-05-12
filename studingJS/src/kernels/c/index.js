@@ -573,7 +573,8 @@ function buildTask(options) {
     tags = [],
     challengeType = 'practice',
     seed,
-    createdAt = null
+    createdAt = null,
+    meta = {}
   } = options;
 
   const normalizedArgTypes = Array.isArray(argTypes) ? argTypes.slice() : ['int[]', 'int'];
@@ -609,6 +610,7 @@ function buildTask(options) {
     seed,
     createdAt,
     meta: {
+      ...cloneJson(meta),
       c: {
         returnType,
         argTypes: normalizedArgTypes.slice(),
@@ -1899,13 +1901,228 @@ function buildGeneratedTask(category, difficulty, rng, seed) {
   }
 }
 
+function withPracticeTopic(task, topicId, topicTitle) {
+  task.meta = {
+    ...task.meta,
+    practiceTopicId: topicId,
+    practiceTopicTitle: topicTitle
+  };
+  task.tags = Array.from(new Set([...(Array.isArray(task.tags) ? task.tags : []), 'theory-practice', `topic:${topicId}`]));
+  return task;
+}
+
+function buildCTopicTask(topicId, topicTitle, difficulty, rng, seed) {
+  const title = topicTitle || topicId;
+  const common = {
+    difficulty: normalizeDifficulty(difficulty),
+    seed: `${seed}:topic:${topicId}`,
+    meta: {
+      practiceTopicId: topicId,
+      practiceTopicTitle: title
+    },
+    tags: ['theory-practice', `topic:${topicId}`]
+  };
+
+  switch (topicId) {
+    case 'variables':
+      return buildTask({
+        ...common,
+        category: 'arrays',
+        title: 'Typed integer average',
+        prompt: `Тема "${title}": используй int-переменные для суммы и длины, верни целочисленное среднее массива.`,
+        returnType: 'int',
+        argTypes: ['int[]', 'int'],
+        argNames: ['values', 'length'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['if (length == 0) {', '  return 0;', '}', 'int total = 0;', 'for (int index = 0; index < length; index += 1) {', '  total += values[index];', '}', 'return total / length;'],
+        tests: [
+          { args: [[2, 4, 6], 3], expected: 4 },
+          { args: [[5, 6], 2], expected: 5 },
+          { args: [[], 0], expected: 0 }
+        ],
+        strategy: 'arrays'
+      });
+    case 'pointers':
+      return buildTask({
+        ...common,
+        category: 'arrays',
+        title: 'Pointer walk sum',
+        prompt: `Тема "${title}": пройди массив через указательную арифметику и верни сумму элементов.`,
+        returnType: 'int',
+        argTypes: ['int[]', 'int'],
+        argNames: ['values', 'length'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['int total = 0;', 'const int *cursor = values;', 'for (int index = 0; index < length; index += 1) {', '  total += *(cursor + index);', '}', 'return total;'],
+        tests: [
+          { args: [[1, 2, 3], 3], expected: 6 },
+          { args: [[5, -2], 2], expected: 3 },
+          { args: [[], 0], expected: 0 }
+        ],
+        strategy: 'arrays'
+      });
+    case 'arrays-strings':
+      return buildTask({
+        ...common,
+        category: 'strings',
+        title: 'String length before terminator',
+        prompt: `Тема "${title}": посчитай символы C-строки до нулевого терминатора.`,
+        returnType: 'int',
+        argTypes: ['string'],
+        argNames: ['text'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['int length = 0;', 'while (text[length] != \'\\0\') {', '  length += 1;', '}', 'return length;'],
+        tests: [
+          { args: ['hello'], expected: 5 },
+          { args: [''], expected: 0 },
+          { args: ['C strings'], expected: 9 }
+        ],
+        strategy: 'strings'
+      });
+    case 'functions':
+      return buildTask({
+        ...common,
+        category: 'algorithms',
+        title: 'Function-style clamp',
+        prompt: `Тема "${title}": реализуй тело solve как чистую функцию clamp: верни value в границах min/max.`,
+        returnType: 'int',
+        argTypes: ['int', 'int', 'int'],
+        argNames: ['value', 'minValue', 'maxValue'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['if (value < minValue) {', '  return minValue;', '}', 'if (value > maxValue) {', '  return maxValue;', '}', 'return value;'],
+        tests: [
+          { args: [5, 1, 10], expected: 5 },
+          { args: [-2, 0, 10], expected: 0 },
+          { args: [99, 0, 10], expected: 10 }
+        ],
+        strategy: 'simple'
+      });
+    case 'structs':
+      return buildTask({
+        ...common,
+        category: 'algorithms',
+        title: 'Struct point manhattan',
+        prompt: `Тема "${title}": создай локальную struct Point и верни manhattan distance от (0,0).`,
+        returnType: 'int',
+        argTypes: ['int', 'int'],
+        argNames: ['x', 'y'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['typedef struct { int x; int y; } Point;', 'Point point = { x, y };', 'int ax = point.x < 0 ? -point.x : point.x;', 'int ay = point.y < 0 ? -point.y : point.y;', 'return ax + ay;'],
+        tests: [
+          { args: [3, 4], expected: 7 },
+          { args: [-2, 5], expected: 7 },
+          { args: [0, 0], expected: 0 }
+        ],
+        strategy: 'simple'
+      });
+    case 'dynamic-memory':
+      return buildTask({
+        ...common,
+        category: 'arrays',
+        title: 'Heap copy positives',
+        prompt: `Тема "${title}": выдели временный буфер через malloc, скопируй положительные числа, освободи память и верни их количество.`,
+        returnType: 'int',
+        argTypes: ['int[]', 'int'],
+        argNames: ['values', 'length'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['int *buffer = (int*)malloc((length > 0 ? length : 1) * sizeof(int));', 'if (buffer == NULL) {', '  return -1;', '}', 'int count = 0;', 'for (int index = 0; index < length; index += 1) {', '  if (values[index] > 0) {', '    buffer[count++] = values[index];', '  }', '}', 'free(buffer);', 'return count;'],
+        tests: [
+          { args: [[1, -2, 3], 3], expected: 2 },
+          { args: [[0, -1], 2], expected: 0 },
+          { args: [[4, 5], 2], expected: 2 }
+        ],
+        strategy: 'arrays'
+      });
+    case 'headers-preprocessor':
+      return buildTask({
+        ...common,
+        category: 'algorithms',
+        title: 'Macro square',
+        prompt: `Тема "${title}": используй безопасный макрос SQUARE(x) со скобками и верни квадрат числа.`,
+        returnType: 'int',
+        argTypes: ['int'],
+        argNames: ['value'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['#define SQUARE(x) ((x) * (x))', 'return SQUARE(value);'],
+        tests: [
+          { args: [3], expected: 9 },
+          { args: [-4], expected: 16 },
+          { args: [0], expected: 0 }
+        ],
+        strategy: 'simple'
+      });
+    case 'file-io':
+      return buildTask({
+        ...common,
+        category: 'strings',
+        title: 'Count file lines',
+        prompt: `Тема "${title}": обработай строку как буфер, прочитанный fgets, и верни количество строк по символам '\\n'.`,
+        returnType: 'int',
+        argTypes: ['string'],
+        argNames: ['text'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['if (text[0] == \'\\0\') {', '  return 0;', '}', 'int lines = 1;', 'for (int index = 0; text[index] != \'\\0\'; index += 1) {', '  if (text[index] == \'\\n\') {', '    lines += 1;', '  }', '}', 'return lines;'],
+        tests: [
+          { args: ['one'], expected: 1 },
+          { args: ['one\ntwo'], expected: 2 },
+          { args: [''], expected: 0 }
+        ],
+        strategy: 'strings'
+      });
+    case 'enums-unions-flags':
+      return buildTask({
+        ...common,
+        category: 'algorithms',
+        title: 'Permission flags',
+        prompt: `Тема "${title}": проверь битовые флаги доступа: read=1, write=2, exec=4. Верни true, если есть все required bits.`,
+        returnType: 'bool',
+        argTypes: ['int', 'int'],
+        argNames: ['flags', 'required'],
+        starterBody: ['return false;'],
+        solutionBody: ['return (flags & required) == required;'],
+        tests: [
+          { args: [3, 1], expected: true },
+          { args: [3, 4], expected: false },
+          { args: [7, 6], expected: true }
+        ],
+        strategy: 'algorithm'
+      });
+    case 'compilation-ub':
+      return buildTask({
+        ...common,
+        category: 'arrays',
+        title: 'Bounds-safe read',
+        prompt: `Тема "${title}": избегай undefined behavior: верни values[index] только если индекс в границах, иначе -1.`,
+        returnType: 'int',
+        argTypes: ['int[]', 'int', 'int'],
+        argNames: ['values', 'length', 'index'],
+        starterBody: ['return INT_MIN;'],
+        solutionBody: ['if (index < 0 || index >= length) {', '  return -1;', '}', 'return values[index];'],
+        tests: [
+          { args: [[5, 6, 7], 3, 1], expected: 6 },
+          { args: [[5], 1, -1], expected: -1 },
+          { args: [[5], 1, 2], expected: -1 }
+        ],
+        strategy: 'arrays'
+      });
+    default:
+      return null;
+  }
+}
+
 function generateTask(options = {}) {
   const seed = resolveSeed(options);
   const rng = createRng(seed);
   const category = chooseCategory(rng, options);
   const difficulty = chooseDifficulty(rng, options);
-  const task = buildGeneratedTask(category, difficulty, rng, seed);
+  const topicId = typeof options.practiceTopicId === 'string' ? options.practiceTopicId.trim() : '';
+  const topicTitle = typeof options.practiceTopicTitle === 'string' ? options.practiceTopicTitle.trim() : '';
+  const task = topicId
+    ? buildCTopicTask(topicId, topicTitle, difficulty, rng, seed) || buildGeneratedTask(category, difficulty, rng, seed)
+    : buildGeneratedTask(category, difficulty, rng, seed);
   task.seed = seed;
+  if (topicId && task.meta?.practiceTopicId === topicId) {
+    withPracticeTopic(task, topicId, topicTitle || task.meta.practiceTopicTitle || topicId);
+  }
   return task;
 }
 

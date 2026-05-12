@@ -74,7 +74,7 @@ export const THEORY_TOPICS = [
       'Знаю Rule of Five.'
     ],
     practiceHint: 'Объектные задачи — напрямую про классы и RAII.',
-    practiceCategory: 'objects'
+    practiceCategory: 'collections'
   },
   {
     id: 'stl',
@@ -111,7 +111,7 @@ export const THEORY_TOPICS = [
       'Использую range-based for.'
     ],
     practiceHint: 'Большинство алгоритмических задач — про STL контейнеры.',
-    practiceCategory: 'algorithms'
+    practiceCategory: 'collections'
   },
   {
     id: 'templates',
@@ -185,7 +185,7 @@ export const THEORY_TOPICS = [
       'Понимаю overhead shared_ptr.'
     ],
     practiceHint: 'Задачи на closures и объекты хорошо ложатся на умные указатели в C++.',
-    practiceCategory: 'closures'
+    practiceCategory: 'arrays'
   },
   {
     id: 'move-semantics',
@@ -221,7 +221,7 @@ export const THEORY_TOPICS = [
       'Помечаю move операции noexcept там где это честно.'
     ],
     practiceHint: 'Попробуй задачи с контейнерами объектов: добавление, возврат из функции, передача владения.',
-    practiceCategory: 'objects'
+    practiceCategory: 'strings'
   },
   {
     id: 'exceptions',
@@ -257,7 +257,7 @@ export const THEORY_TOPICS = [
       'Не использую исключения для обычного ветвления в горячем цикле.'
     ],
     practiceHint: 'Добавь обработку ошибок в задачи парсинга: пустой ввод, плохой формат, невозможное состояние.',
-    practiceCategory: 'functions'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'lambdas',
@@ -294,7 +294,7 @@ export const THEORY_TOPICS = [
       'Не возвращаю лямбду со ссылками на локальные переменные.'
     ],
     practiceHint: 'Тренируй predicates: фильтрация, сортировка, подсчёт по условию.',
-    practiceCategory: 'algorithms'
+    practiceCategory: 'collections'
   },
   {
     id: 'iterators-algorithms',
@@ -368,7 +368,7 @@ export const THEORY_TOPICS = [
       'Понимаю роли compiler и linker.'
     ],
     practiceHint: 'Разбей маленькую программу на main.cpp, header и implementation-файл.',
-    practiceCategory: 'functions'
+    practiceCategory: 'arrays'
   },
   {
     id: 'strings-string-view',
@@ -405,7 +405,7 @@ export const THEORY_TOPICS = [
       'Не предполагаю что string_view заканчивается нулём.'
     ],
     practiceHint: 'Сделай парсер строк: split, trim, key=value без лишних копий.',
-    practiceCategory: 'arrays'
+    practiceCategory: 'strings'
   },
   {
     id: 'enum-class',
@@ -442,7 +442,7 @@ export const THEORY_TOPICS = [
       'Указываю underlying type когда важен размер.'
     ],
     practiceHint: 'Замени строки статусов в задаче на enum class и switch.',
-    practiceCategory: 'objects'
+    practiceCategory: 'algorithms'
   },
   {
     id: 'concurrency-basics',
@@ -478,7 +478,7 @@ export const THEORY_TOPICS = [
       'Понимаю что data race в C++ — undefined behavior.'
     ],
     practiceHint: 'Сделай параллельную загрузку или подсчёт частот с безопасным объединением результата.',
-    practiceCategory: 'async'
+    practiceCategory: 'algorithms'
   }
 ];
 

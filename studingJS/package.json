@@ -22,6 +22,7 @@
     "drafts:persistence": "node src/tests/taskDraftPersistenceTest.js",
     "theory:content": "node src/tests/theoryContentTest.js",
     "theory:coverage": "node src/tests/theoryCoverageTest.js",
+    "theory:practice": "node src/tests/theoryPracticeContractTest.js",
     "theory:scroll": "node src/tests/theoryDrawerScrollTest.js",
     "variation": "node src/tests/variationGuardTest.js",
     "python:variation": "node src/tests/pythonVariationGuardTest.js",

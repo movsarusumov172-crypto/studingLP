@@ -58,6 +58,74 @@ const CPP_KERNEL_META = {
   accent: '#38bdf8'
 };
 
+const THEORY_TOPIC_PRACTICE = {
+  variables: {
+    category: 'arrays',
+    title: 'Variables and arithmetic state',
+    note: 'Practice the variables topic by tracking a running numeric state while transforming the input.'
+  },
+  classes: {
+    category: 'collections',
+    title: 'Class-style data modeling',
+    note: 'Practice the classes topic by thinking about each value as a small object with state and behavior before returning the summary.'
+  },
+  stl: {
+    category: 'collections',
+    title: 'STL containers',
+    note: 'Practice the STL topic with vector/string containers and standard collection operations.'
+  },
+  templates: {
+    category: 'algorithms',
+    title: 'Generic algorithm shape',
+    note: 'Practice the templates topic by writing logic that would naturally generalize across comparable values.'
+  },
+  memory: {
+    category: 'arrays',
+    title: 'Ownership-friendly data flow',
+    note: 'Practice the memory topic by returning a new value without leaking ownership or mutating caller-owned input unexpectedly.'
+  },
+  'move-semantics': {
+    category: 'strings',
+    title: 'Move-aware string processing',
+    note: 'Practice move semantics by building the result efficiently from local temporaries.'
+  },
+  exceptions: {
+    category: 'algorithms',
+    title: 'Guarded algorithm',
+    note: 'Practice exceptions by handling edge cases explicitly before the main algorithm.'
+  },
+  lambdas: {
+    category: 'collections',
+    title: 'Lambda-ready filtering',
+    note: 'Practice lambdas by expressing the core rule as a small predicate or comparator.'
+  },
+  'iterators-algorithms': {
+    category: 'algorithms',
+    title: 'Iterator and algorithm pass',
+    note: 'Practice iterators and algorithms by solving the task with clear single-pass or sorted-pass traversal.'
+  },
+  'build-model': {
+    category: 'arrays',
+    title: 'Small buildable function',
+    note: 'Practice the build model topic by keeping the solution as a portable function with predictable inputs and outputs.'
+  },
+  'strings-string-view': {
+    category: 'strings',
+    title: 'String and string_view thinking',
+    note: 'Practice string/string_view by scanning text without unnecessary intermediate copies.'
+  },
+  'enum-class': {
+    category: 'algorithms',
+    title: 'Enum-like branching',
+    note: 'Practice enum class thinking by making explicit, named decisions for each case in the algorithm.'
+  },
+  'concurrency-basics': {
+    category: 'algorithms',
+    title: 'Independent work chunks',
+    note: 'Practice concurrency basics by keeping each step independent and avoiding shared mutable state.'
+  }
+};
+
 const NAME_POOL = ['Ada', 'Mila', 'Nina', 'Oleg', 'Leo', 'Sara', 'Ilya', 'Zoe', 'Maks', 'Lina', 'Vera', 'Pavel', 'Rita', 'Artem', 'Noah', 'Iris'];
 const WORD_POOL = ['alpha', 'beta', 'gamma', 'delta', 'omega', 'nova', 'pulse', 'vector', 'lumen', 'mint', 'orbit', 'spark', 'drift', 'tide', 'glow', 'zen', 'flux'];
 
@@ -2384,10 +2452,40 @@ function buildGeneratedTask(category, difficulty, rng) {
   }
 }
 
+function getKnownPracticeTopic(options = {}) {
+  const topicId = typeof options.practiceTopicId === 'string' ? options.practiceTopicId.trim() : '';
+  if (!topicId || !Object.prototype.hasOwnProperty.call(THEORY_TOPIC_PRACTICE, topicId)) {
+    return null;
+  }
+  return {
+    id: topicId,
+    title: typeof options.practiceTopicTitle === 'string' && options.practiceTopicTitle.trim()
+      ? options.practiceTopicTitle.trim()
+      : THEORY_TOPIC_PRACTICE[topicId].title,
+    spec: THEORY_TOPIC_PRACTICE[topicId]
+  };
+}
+
+function decoratePracticeTopicTask(task, topic) {
+  const meta = task.meta && typeof task.meta === 'object' ? task.meta : {};
+  task.practiceTopicId = topic.id;
+  task.practiceTopicTitle = topic.title;
+  task.title = `${topic.spec.title}: ${task.title}`;
+  task.prompt = `${topic.spec.note}\n\n${task.prompt}`;
+  task.tags = Array.from(new Set([...(Array.isArray(task.tags) ? task.tags : []), 'theory-practice', topic.id]));
+  task.meta = {
+    ...meta,
+    practiceTopicId: topic.id,
+    practiceTopicTitle: topic.title
+  };
+  return task;
+}
+
 function generateTask(options = {}) {
   const seed = resolveSeed(options);
   const rng = createRng(seed);
-  const category = normalizeCategory(chooseCategory(options, rng));
+  const topic = getKnownPracticeTopic(options);
+  const category = topic ? topic.spec.category : normalizeCategory(chooseCategory(options, rng));
   const difficulty = normalizeDifficulty(chooseDifficulty(options, rng));
   const challengeType = options.mode === 'daily' ? 'daily' : options.mode === 'boss' ? 'boss' : 'practice';
   const task = buildGeneratedTask(category, difficulty, rng);
@@ -2398,7 +2496,7 @@ function generateTask(options = {}) {
   task.kernelId = CPP_KERNEL_META.id;
   task.kernelTitle = CPP_KERNEL_META.title;
   task.editorLanguage = CPP_KERNEL_META.editorLanguage;
-  return task;
+  return topic ? decoratePracticeTopicTask(task, topic) : task;
 }
 
 function createCustomTaskTemplate() {
