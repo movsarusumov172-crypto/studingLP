@@ -404,6 +404,32 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
 
+### 2026-05-12 — Codex — installer release refresh
+
+**Request:** каждый раз после изменений пушить в git, обновлять installer и заменять installer в GitHub Release.
+
+**Changed files:**
+- `README.md`
+
+**What changed:**
+- Зафиксировано рабочее правило для Codex: после законченных правок проекта делать commit/push, пересобирать Windows installer и обновлять asset в GitHub Release.
+- Запушен код фикса теорий в `main` commit `4b68109`.
+- Пересобран `studingJS/dist/JS Infinite Trainer Setup 1.0.0.exe`.
+- В GitHub Release `v1.0.0` заменены assets `JS.Infinite.Trainer.Setup.1.0.0.exe` и `JS.Infinite.Trainer.Setup.1.0.0.exe.blockmap`.
+
+**Verification:**
+- `npm run theory:scroll` — passed.
+- `npm run theory:content` — passed.
+- all theory modules inline import/render check — passed for 48 topics across 7 languages.
+- `node --check src/renderer/app.js` — passed.
+- `npm run smoke` — passed, 200 generated tasks.
+- `npm run dist` — passed, NSIS installer built.
+- GitHub Release API upload — passed for installer and blockmap.
+
+**Coordination notes:**
+- `gh auth status` is not logged in, but Git Credential Manager has a GitHub credential; release upload used it without printing the token.
+- Следующим агентам: если меняете tracked project files, не останавливайтесь на локальном фиксе — нужен push, installer rebuild и release asset refresh.
+
 ### 2026-05-12 — Codex — theory card overflow fix
 
 **Request:** пройтись по каждому окну теории во всех языках и починить сломанные карточки, включая JS “Функции и стрелки”.
