@@ -324,16 +324,20 @@ npm run dist     # → dist/JS Infinite Trainer Setup 1.0.0.exe
 
 ## Что сделано ✅
 
-- [x] **Smart Session ("Ежедневная сессия")** — 4-5 задач автоматически: разминка → 2 слабые темы → закрепление → повторение SRS. Прогресс-бар в шапке задачи. Авто-переход на следующую задачу через 1.5с после solve. Кнопка "Следующая" = пропустить шаг. Итоговый экран с результатами.
-- [x] **Thinking skill badges** — каждая задача помечается тегом навыка мышления (Async-мышление, Коллекции, Замыкания и т.д.) прямо в шапке
-- [x] **Улучшенный разбор ошибок** — edge case detection, off-by-one detection, пустой return, тип ответа не тот — конкретные объяснения с советом
-- [x] **Session summary** — после сессии: результаты, время, что решил/пропустил, следующий шаг ("на сегодня достаточно" или дата следующего повторения)
-
-## Что сделано ✅
-
+**Приложение:**
 - [x] Electron app: генерация задач, Monaco IDE, XP, серии, SRS, достижения
 - [x] 7 языковых ядер с полной генерацией и теорией
+- [x] Теория расширена до 94 тем (JS 14, Python 19, Go 12, C 10, C++ 13, C# 13, Java 13) — Codex
 - [x] QA-верификация каждой задачи (async spawn)
+- [x] Smart Session ("Ежедневная сессия") — 4-5 задач автоматически по слабым темам, прогресс-бар, session summary
+- [x] Thinking skill badges — тег навыка мышления на каждой задаче
+- [x] Улучшенный разбор ошибок — edge case, off-by-one, пустой return, тип не тот
+- [x] Quieter UI — важные кнопки на виду, редкие в ⋯ overflow-меню
+- [x] Account modal с план-бейджем и управлением подпиской
+- [x] Windows installer (.exe, NSIS, custom icon)
+- [x] GitHub Release: https://github.com/movsarusumov172-crypto/studingLP/releases
+
+**Backend:**
 - [x] Cloud auth: JWT + refresh token rotation + bcrypt
 - [x] Progress sync: offline-first, merge стратегия
 - [x] Custom tasks: CRUD локально + sync на бэке
@@ -344,9 +348,6 @@ npm run dist     # → dist/JS Infinite Trainer Setup 1.0.0.exe
 - [x] Sentry: error tracking (не настроен)
 - [x] Rate limiting: 200 req/min глобально, 10/min на auth
 - [x] Security: input validation с max bounds, timing attack защита
-- [x] Account modal с план-бейджем и управлением подпиской
-- [x] Windows installer (.exe, NSIS, custom icon)
-- [x] GitHub Release: https://github.com/movsarusumov172-crypto/studingLP/releases
 
 ## Что не сделано ❌
 
