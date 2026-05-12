@@ -653,6 +653,243 @@ const PYTHON_THEORY_TOPICS = [
       'Понимаю, когда класс действительно уместен.'
     ],
     practiceHint: 'Теперь попробуй создать свой класс и добавить в него пару полезных методов.'
+  },
+  {
+    id: 'comprehensions-generators',
+    title: 'Comprehensions и генераторы',
+    shortTitle: 'Comprehensions',
+    simpleExplanation: 'Comprehension собирает коллекцию коротко, а генератор отдаёт значения по одному и не хранит всё сразу.',
+    howItWorks: 'Python выполняет выражение слева для каждого элемента из `for` и может пропускать лишнее через `if`. Круглые скобки создают генератор, который вычисляет следующий элемент только при обходе.',
+    syntax: [
+      '[x * 2 for x in numbers]',
+      '{word: len(word) for word in words}',
+      '(line.strip() for line in lines)',
+      '[x for x in numbers if x > 0]'
+    ],
+    examples: [
+      {
+        title: 'Простой',
+        note: 'Собираем квадраты чисел.',
+        code: `numbers = [1, 2, 3]\nsquares = [n * n for n in numbers]\nprint(squares)`
+      },
+      {
+        title: 'Средний',
+        note: 'Фильтруем и сразу преобразуем.',
+        code: `names = ["Ada", "", "Bob"]\nclean = [name.lower() for name in names if name]\nprint(clean)`
+      },
+      {
+        title: 'Реальный',
+        note: 'Генератор читает данные лениво.',
+        code: `rows = ["  one  ", "  two  "]\nclean_rows = (row.strip() for row in rows)\nfor row in clean_rows:\n    print(row)`
+      }
+    ],
+    commonMistakes: [
+      'Делают comprehension слишком длинным и нечитаемым.',
+      'Путают список `[...]` и генератор `(...)`.',
+      'Ожидают, что генератор можно пройти много раз.'
+    ],
+    importantNuances: [
+      'List comprehension хорош для готового списка, generator expression — для потока значений.',
+      'Dict comprehension собирает словарь, set comprehension — множество.',
+      'Если логика сложная, обычный цикл понятнее.'
+    ],
+    checklist: [
+      'Умею собрать список через comprehension.',
+      'Понимаю разницу между списком и генератором.',
+      'Могу добавить фильтр `if` внутри comprehension.',
+      'Не превращаю короткую запись в головоломку.'
+    ],
+    practiceHint: 'Теперь попробуй взять список чисел, отфильтровать лишнее и собрать новую коллекцию.',
+    practiceCategory: 'arrays'
+  },
+  {
+    id: 'decorators',
+    title: 'Декораторы',
+    shortTitle: 'Декораторы',
+    simpleExplanation: 'Декоратор оборачивает функцию и добавляет поведение вокруг её вызова без изменения самой функции.',
+    howItWorks: 'Запись `@decorator` равна присваиванию `func = decorator(func)`. Декоратор получает функцию, возвращает новую функцию-обёртку и может выполнить код до или после оригинального вызова.',
+    syntax: [
+      '@timer\ndef load_data():\n    ...',
+      'def decorator(func):\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper',
+      'from functools import wraps'
+    ],
+    examples: [
+      {
+        title: 'Простой',
+        note: 'Печатаем сообщение перед вызовом.',
+        code: `def announce(func):\n    def wrapper():\n        print("Старт")\n        return func()\n    return wrapper\n\n@announce\ndef run():\n    print("Работаем")`
+      },
+      {
+        title: 'Средний',
+        note: 'Передаём любые аргументы в исходную функцию.',
+        code: `def debug(func):\n    def wrapper(*args, **kwargs):\n        print(args, kwargs)\n        return func(*args, **kwargs)\n    return wrapper`
+      },
+      {
+        title: 'Реальный',
+        note: '`wraps` сохраняет имя и документацию функции.',
+        code: `from functools import wraps\n\ndef logged(func):\n    @wraps(func)\n    def wrapper(*args, **kwargs):\n        print(f"call {func.__name__}")\n        return func(*args, **kwargs)\n    return wrapper`
+      }
+    ],
+    commonMistakes: [
+      'Забывают вернуть `wrapper` из декоратора.',
+      'Не прокидывают `*args` и `**kwargs`, ломая функции с параметрами.',
+      'Не используют `functools.wraps`, и имя функции теряется.'
+    ],
+    importantNuances: [
+      'Декоратор выполняется при объявлении функции, а обёртка — при вызове.',
+      'Декораторы удобны для логирования, проверки доступа, кеша и замера времени.',
+      'Слишком много декораторов усложняет чтение потока выполнения.'
+    ],
+    checklist: [
+      'Понимаю, что `@decorator` заменяет функцию обёрткой.',
+      'Умею написать wrapper с `*args` и `**kwargs`.',
+      'Знаю, зачем нужен `functools.wraps`.',
+      'Использую декоратор только для сквозной логики.'
+    ],
+    practiceHint: 'Теперь попробуй написать декоратор, который печатает имя функции перед её вызовом.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'context-managers-files',
+    title: 'Context managers и файлы',
+    shortTitle: 'Context managers',
+    simpleExplanation: 'Контекстный менеджер гарантирует подготовку и уборку ресурса. Для файлов это значит: открыл, поработал, закрыл автоматически.',
+    howItWorks: 'Блок `with` вызывает вход в контекст, выполняет тело и затем вызывает выход из контекста даже при ошибке. Поэтому файлы, соединения и блокировки не остаются открытыми случайно.',
+    syntax: [
+      'with open("data.txt", encoding="utf-8") as file:\n    text = file.read()',
+      'with open("out.txt", "w", encoding="utf-8") as file:\n    file.write("ok")',
+      'from contextlib import contextmanager'
+    ],
+    examples: [
+      {
+        title: 'Простой',
+        note: 'Читаем весь файл безопасно.',
+        code: `with open("notes.txt", encoding="utf-8") as file:\n    text = file.read()\nprint(text)`
+      },
+      {
+        title: 'Средний',
+        note: 'Пишем строки без ручного `close()`.',
+        code: `items = ["one", "two"]\nwith open("out.txt", "w", encoding="utf-8") as file:\n    for item in items:\n        file.write(item + "\\n")`
+      },
+      {
+        title: 'Реальный',
+        note: 'Свой контекст удобно делать через `contextmanager`.',
+        code: `from contextlib import contextmanager\n\n@contextmanager\ndef section(name):\n    print(f"start {name}")\n    try:\n        yield\n    finally:\n        print(f"end {name}")`
+      }
+    ],
+    commonMistakes: [
+      'Открывают файл без `with` и забывают закрыть его.',
+      'Не указывают `encoding`, а потом ловят проблемы с кириллицей.',
+      'Читают огромный файл целиком, хотя можно пройтись по строкам.'
+    ],
+    importantNuances: [
+      '`with` закрывает ресурс даже если внутри блока возникло исключение.',
+      'Режим `"w"` перезаписывает файл, `"a"` дописывает в конец.',
+      'Для больших файлов лучше читать построчно: `for line in file`.'
+    ],
+    checklist: [
+      'Умею открывать файл через `with open(...) as file`.',
+      'Понимаю режимы чтения, записи и дозаписи.',
+      'Помню про `encoding="utf-8"`.',
+      'Не держу ресурсы открытыми дольше нужного.'
+    ],
+    practiceHint: 'Теперь попробуй прочитать строки, почистить их и записать результат в другой файл.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'typing-dataclasses',
+    title: 'Typing и dataclasses',
+    shortTitle: 'Typing/dataclass',
+    simpleExplanation: 'Аннотации типов объясняют, какие данные ожидает код, а `dataclass` быстро создаёт удобный класс для хранения данных.',
+    howItWorks: 'Типы в Python чаще всего подсказывают человеку, IDE и проверяющим инструментам. `@dataclass` по аннотациям создаёт `__init__`, красивый вывод и сравнение объектов.',
+    syntax: [
+      'def add(a: int, b: int) -> int:\n    return a + b',
+      'from dataclasses import dataclass',
+      '@dataclass\nclass User:\n    name: str\n    age: int'
+    ],
+    examples: [
+      {
+        title: 'Простой',
+        note: 'Аннотации делают контракт функции явным.',
+        code: `def format_score(name: str, score: int) -> str:\n    return f"{name}: {score}"`
+      },
+      {
+        title: 'Средний',
+        note: 'Список и словарь тоже можно описывать типами.',
+        code: `def count_tags(tags: list[str]) -> dict[str, int]:\n    result = {}\n    for tag in tags:\n        result[tag] = result.get(tag, 0) + 1\n    return result`
+      },
+      {
+        title: 'Реальный',
+        note: 'Dataclass заменяет много шаблонного кода.',
+        code: `from dataclasses import dataclass\n\n@dataclass\nclass Task:\n    title: str\n    done: bool = False\n\ntask = Task("Учить Python")`
+      }
+    ],
+    commonMistakes: [
+      'Думают, что аннотации автоматически запрещают неправильный тип во время выполнения.',
+      'Используют изменяемое значение по умолчанию вместо `field(default_factory=...)`.',
+      'Пишут dataclass для поведения, хотя он лучше подходит для данных.'
+    ],
+    importantNuances: [
+      'Аннотации помогают читать код и ловить ошибки статическими проверками.',
+      'Для опционального значения используй `str | None` или `Optional[str]`.',
+      'В dataclass можно добавлять методы, если они относятся к данным объекта.'
+    ],
+    checklist: [
+      'Умею писать типы аргументов и результата функции.',
+      'Понимаю, что типы в Python обычно не проверяются сами по себе.',
+      'Могу создать простой `@dataclass`.',
+      'Помню про осторожность с изменяемыми значениями по умолчанию.'
+    ],
+    practiceHint: 'Теперь попробуй описать dataclass для задачи или пользователя и написать функцию с аннотациями.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'async-await',
+    title: 'Async/await',
+    shortTitle: 'Async',
+    simpleExplanation: 'Async/await помогает писать код, который ждёт ввод-вывод без блокировки всего потока выполнения.',
+    howItWorks: '`async def` создаёт корутину. Она реально выполняется, когда её ждут через `await` или запускают в event loop. Пока одна корутина ждёт, event loop может дать время другой.',
+    syntax: [
+      'async def load():\n    return 42',
+      'result = await load()',
+      'asyncio.run(main())',
+      'await asyncio.gather(task1(), task2())'
+    ],
+    examples: [
+      {
+        title: 'Простой',
+        note: 'Корутину запускают через event loop.',
+        code: `import asyncio\n\nasync def main():\n    await asyncio.sleep(1)\n    print("Готово")\n\nasyncio.run(main())`
+      },
+      {
+        title: 'Средний',
+        note: 'Несколько ожиданий можно выполнить вместе.',
+        code: `import asyncio\n\nasync def load(name):\n    await asyncio.sleep(1)\n    return name\n\nasync def main():\n    result = await asyncio.gather(load("a"), load("b"))\n    print(result)`
+      },
+      {
+        title: 'Реальный',
+        note: 'Ошибки в async-коде ловятся обычным `try/except`.',
+        code: `async def safe_load(fetch):\n    try:\n        return await fetch()\n    except TimeoutError:\n        return None`
+      }
+    ],
+    commonMistakes: [
+      'Вызывают async-функцию без `await` и получают объект coroutine.',
+      'Используют блокирующий `time.sleep()` внутри async-кода вместо `asyncio.sleep()`.',
+      'Думают, что async ускоряет вычисления на CPU.'
+    ],
+    importantNuances: [
+      'Async полезен для сети, файловых ожиданий, таймеров и большого числа одновременных операций.',
+      '`await` можно использовать только внутри `async def`.',
+      'Для тяжёлых вычислений нужны процессы, потоки или оптимизация алгоритма, а не один только async.'
+    ],
+    checklist: [
+      'Понимаю разницу между корутиной и её результатом.',
+      'Умею запускать async-код через `asyncio.run()`.',
+      'Знаю, когда нужен `await`.',
+      'Не смешиваю блокирующие вызовы с async-кодом без необходимости.'
+    ],
+    practiceHint: 'Теперь попробуй запустить две async-операции параллельно через `asyncio.gather()`.',
+    practiceCategory: 'async'
   }
 ];
 
@@ -671,7 +908,12 @@ const THEORY_PRACTICE_ROUTES = {
   closures: { practiceCategory: 'functions' },
   lambda: { practiceCategory: 'functions' },
   imports: { practiceCategory: 'functions' },
-  oop: { practiceCategory: 'functions' }
+  oop: { practiceCategory: 'functions' },
+  'comprehensions-generators': { practiceCategory: 'arrays' },
+  decorators: { practiceCategory: 'functions' },
+  'context-managers-files': { practiceCategory: 'functions' },
+  'typing-dataclasses': { practiceCategory: 'objects' },
+  'async-await': { practiceCategory: 'async' }
 };
 
 function escapeHtml(value = '') {

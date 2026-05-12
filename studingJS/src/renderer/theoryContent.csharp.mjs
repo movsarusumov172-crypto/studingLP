@@ -185,6 +185,305 @@ export const THEORY_TOPICS = [
     ],
     practiceHint: 'Задачи на async — параллелизм, retry, pipeline.',
     practiceCategory: 'async'
+  },
+  {
+    id: 'nullable-references',
+    title: 'Nullable Reference Types',
+    shortTitle: 'Nullable refs',
+    simpleExplanation: 'Nullable Reference Types (C# 8+) заставляют явно отмечать где ссылка может быть null: string? может быть null, string — не должна. Это предупреждения компилятора, не runtime-защита.',
+    howItWorks: 'Включается через <Nullable>enable</Nullable> или #nullable enable. Компилятор анализирует поток кода: после проверки на null переменная считается безопасной. Оператор ! отключает предупреждение только в конкретном месте.',
+    syntax: [
+      '#nullable enable',
+      'string name = "Ann";',
+      'string? nickname = null;',
+      'int length = nickname?.Length ?? 0;',
+      'ArgumentNullException.ThrowIfNull(name);',
+      'var forced = nickname!.Length; // обещание компилятору'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Разделяем nullable и non-null.', code: 'string title = "Post";\nstring? subtitle = null;\nConsole.WriteLine(subtitle?.ToUpper() ?? "без подзаголовка");' },
+      { title: 'Средний', note: 'Guard clause уточняет тип.', code: 'void PrintUser(User? user) {\n  if (user is null) return;\n  Console.WriteLine(user.Name); // user уже не null\n}' },
+      { title: 'Реальный', note: 'ThrowIfNull для входных данных.', code: 'Order Create(User? user) {\n  ArgumentNullException.ThrowIfNull(user);\n  return new Order(user.Id);\n}' }
+    ],
+    commonMistakes: [
+      'Ставят ! везде — скрывают проблему, а не исправляют контракт.',
+      'Думают что string не может стать null в runtime — может, это только анализ компилятора.',
+      'Не включают Nullable в проекте и теряют большую часть пользы.'
+    ],
+    importantNuances: [
+      'Warnings nullable стоит лечить как ошибки в новом коде.',
+      'Для DTO из внешних источников чаще нужны string? и валидация.',
+      'required и init помогают создавать non-null свойства безопасно.'
+    ],
+    checklist: [
+      'Включаю nullable reference types в проекте.',
+      'Пишу ? только там где null реально допустим.',
+      'Проверяю входные nullable значения перед использованием.',
+      'Использую ! только когда инвариант доказан вне анализатора.'
+    ],
+    practiceHint: 'Тренируй безопасные проверки null на объектах и входных данных.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'records',
+    title: 'Records и value equality',
+    shortTitle: 'Records',
+    simpleExplanation: 'record — тип для данных. Он автоматически даёт value equality, Deconstruct, ToString и удобное копирование через with. Хорош для DTO, команд, настроек и неизменяемых моделей.',
+    howItWorks: 'Record сравнивается по значениям свойств, а class по умолчанию — по ссылке. Positional record создаёт свойства из параметров конструктора. with создаёт копию с изменёнными полями.',
+    syntax: [
+      'public record UserDto(int Id, string Name);',
+      'var user = new UserDto(1, "Ann");',
+      'var renamed = user with { Name = "Kate" };',
+      'public record class Order(int Id);',
+      'public readonly record struct Point(double X, double Y);'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Две записи равны по данным.', code: 'record Point(int X, int Y);\nvar a = new Point(1, 2);\nvar b = new Point(1, 2);\nConsole.WriteLine(a == b); // true' },
+      { title: 'Средний', note: 'with для безопасной копии.', code: 'record User(string Name, bool IsActive);\nvar user = new User("Ann", false);\nvar active = user with { IsActive = true };' },
+      { title: 'Реальный', note: 'DTO для ответа API.', code: 'public record ProductResponse(\n  int Id,\n  string Name,\n  decimal Price\n);\nreturn new ProductResponse(product.Id, product.Name, product.Price);' }
+    ],
+    commonMistakes: [
+      'Кладут изменяемые коллекции в record и ждут полной иммутабельности.',
+      'Используют record для сущности с identity и сложным жизненным циклом.',
+      'Переопределяют Equals вручную без реальной необходимости.'
+    ],
+    importantNuances: [
+      'init-свойства можно задать при создании, но нельзя менять потом обычным set.',
+      'record struct — value type, record class — reference type.',
+      'Value equality учитывает тип record, не только набор свойств.'
+    ],
+    checklist: [
+      'Использую records для данных без сложного поведения.',
+      'Понимаю отличие value equality от reference equality.',
+      'Не храню изменяемые коллекции без контроля.',
+      'Использую with вместо мутации объекта.'
+    ],
+    practiceHint: 'Задачи на объекты удобно решать через маленькие records.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'pattern-matching',
+    title: 'Pattern Matching',
+    shortTitle: 'Patterns',
+    simpleExplanation: 'Pattern matching проверяет форму и тип значения. is, switch expression, property/list patterns делают ветвления короче и безопаснее, особенно когда вход может быть разных типов.',
+    howItWorks: 'Компилятор сопоставляет значение с шаблоном сверху вниз. В switch expression первый подходящий case возвращает результат. Property pattern проверяет свойства, relational pattern — условия вида > 0.',
+    syntax: [
+      'if (obj is int n and > 0) { }',
+      'var label = score switch { >= 90 => "A", _ => "B" };',
+      'user is { IsActive: true, Role: "Admin" }',
+      'items is [var first, ..]',
+      'shape switch { Circle c => c.Radius, _ => 0 }'
+    ],
+    examples: [
+      { title: 'Простой', note: 'is сразу даёт переменную нужного типа.', code: 'object value = 42;\nif (value is int n and > 0)\n  Console.WriteLine(n * 2);' },
+      { title: 'Средний', note: 'switch expression вместо if-else.', code: 'string GetStatus(int code) => code switch {\n  >= 200 and < 300 => "ok",\n  >= 400 and < 500 => "client error",\n  _ => "other"\n};' },
+      { title: 'Реальный', note: 'Property pattern для правил.', code: 'bool CanPublish(User user) => user is {\n  IsActive: true,\n  Role: "Editor" or "Admin"\n};' }
+    ],
+    commonMistakes: [
+      'Забывают _ в switch expression — можно получить исключение на неожиданных данных.',
+      'Ставят общий pattern выше частного — частный case никогда не выполнится.',
+      'Делают слишком длинный switch вместо маленьких методов с понятными именами.'
+    ],
+    importantNuances: [
+      'Порядок arms в switch важен: проверка идёт сверху вниз.',
+      'Pattern matching не заменяет полиморфизм, когда поведение принадлежит самим типам.',
+      'List patterns доступны в современных версиях C# и удобны для коротких массивов.'
+    ],
+    checklist: [
+      'Использую is pattern вместо ручного cast.',
+      'Добавляю fallback _ для неожиданных значений.',
+      'Проверяю порядок pattern-веток.',
+      'Не превращаю switch в огромную бизнес-таблицу.'
+    ],
+    practiceHint: 'Тренируй условия, классификацию данных и обработку разных типов.',
+    practiceCategory: 'algorithms'
+  },
+  {
+    id: 'delegates-events',
+    title: 'Delegates, Func/Action и events',
+    shortTitle: 'Delegates',
+    simpleExplanation: 'Delegate — типизированная ссылка на метод. Func<T>, Action<T> и Predicate<T> закрывают большинство случаев. event — безопасная публикация уведомлений наружу.',
+    howItWorks: 'Делегат хранит список методов для вызова. Лямбда компилируется в делегат или expression tree по контексту. event разрешает внешнему коду только подписку и отписку, но не прямой вызов.',
+    syntax: [
+      'delegate int Operation(int a, int b);',
+      'Func<int, int, int> add = (a, b) => a + b;',
+      'Action<string> log = Console.WriteLine;',
+      'public event EventHandler? Saved;',
+      'Saved?.Invoke(this, EventArgs.Empty);'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Func вместо отдельного delegate.', code: 'Func<int, int, int> op = (a, b) => a + b;\nConsole.WriteLine(op(2, 3)); // 5' },
+      { title: 'Средний', note: 'Callback для фильтра.', code: 'IEnumerable<User> Filter(\n  IEnumerable<User> users,\n  Predicate<User> match\n) => users.Where(u => match(u));' },
+      { title: 'Реальный', note: 'Событие после сохранения.', code: 'class Repository {\n  public event EventHandler? Saved;\n  public void Save() {\n    // запись в БД\n    Saved?.Invoke(this, EventArgs.Empty);\n  }\n}' }
+    ],
+    commonMistakes: [
+      'Используют async void в обработчике без try/catch — исключение трудно контролировать.',
+      'Не отписываются от событий долгоживущих объектов — возможна утечка памяти.',
+      'Создают собственный delegate там где достаточно Func или Action.'
+    ],
+    importantNuances: [
+      'event нельзя вызвать извне класса-владельца.',
+      'Func возвращает значение, Action ничего не возвращает, Predicate возвращает bool.',
+      'Для UI и доменных событий важен жизненный цикл подписчиков.'
+    ],
+    checklist: [
+      'Выбираю Func/Action/Predicate для простых callback.',
+      'Использую event для уведомлений наружу.',
+      'Безопасно вызываю event через ?.Invoke.',
+      'Помню про отписку от долгоживущих событий.'
+    ],
+    practiceHint: 'Делегаты помогают в задачах на функции, фильтры и callbacks.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'exceptions',
+    title: 'Исключения',
+    shortTitle: 'Exceptions',
+    simpleExplanation: 'Исключения — путь сообщить что операция не может продолжаться нормально. Лови конкретные типы, не глуши ошибки, освобождай ресурсы через using/finally.',
+    howItWorks: 'throw прерывает текущий поток выполнения и ищет ближайший подходящий catch. finally выполняется и при успехе, и при ошибке. catch when фильтрует исключение без лишней логики внутри блока.',
+    syntax: [
+      'try { Work(); }',
+      'catch (InvalidOperationException ex) { Log(ex); }',
+      'catch (Exception ex) when (ShouldRetry(ex)) { }',
+      'finally { Cleanup(); }',
+      'throw new ArgumentException("Bad value", nameof(value));',
+      'throw; // сохранить stack trace'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Кидаем точное исключение.', code: 'void SetAge(int age) {\n  if (age < 0)\n    throw new ArgumentOutOfRangeException(nameof(age));\n}' },
+      { title: 'Средний', note: 'Ловим только ожидаемое.', code: 'try {\n  config = LoadConfig(path);\n}\ncatch (FileNotFoundException ex) {\n  logger.LogWarning(ex, "Config not found");\n  config = Config.Default;\n}' },
+      { title: 'Реальный', note: 'Фильтр catch when.', code: 'catch (HttpRequestException ex)\n  when (ex.StatusCode == HttpStatusCode.NotFound) {\n  return null;\n}' }
+    ],
+    commonMistakes: [
+      'catch (Exception) без логирования — ошибка исчезает.',
+      'throw ex; сбрасывает stack trace, нужен просто throw;.',
+      'Используют исключения для обычной логики в цикле — дорого и шумно.'
+    ],
+    importantNuances: [
+      'ArgumentException и наследники — для неверных аргументов метода.',
+      'OperationCanceledException обычно не считается ошибкой, если отмена ожидаема.',
+      'В async методах исключение приходит при await, а не при создании Task.'
+    ],
+    checklist: [
+      'Кидаю конкретные исключения с понятным сообщением.',
+      'Ловлю только те ошибки, которые могу обработать.',
+      'Использую throw; для повторного выброса.',
+      'Не скрываю исключения без логирования или результата.'
+    ],
+    practiceHint: 'Практикуй валидацию, обработку файлов и сетевых ошибок.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'di-async-streams',
+    title: 'Dependency Injection и async streams',
+    shortTitle: 'DI + streams',
+    simpleExplanation: 'Dependency Injection передаёт зависимости извне, а не создаёт их внутри класса. IAsyncEnumerable<T> отдаёт данные постепенно через await foreach — удобно для потоков, БД и больших файлов.',
+    howItWorks: 'DI-контейнер знает как создать сервисы и их зависимости. Lifetimes: Singleton живёт всё приложение, Scoped — запрос/операция, Transient — новый каждый раз. Async stream возвращает элементы по мере готовности и поддерживает CancellationToken.',
+    syntax: [
+      'builder.Services.AddScoped<IUserRepo, UserRepo>();',
+      'public UsersService(IUserRepo repo) { _repo = repo; }',
+      'async IAsyncEnumerable<User> ReadUsersAsync() { yield return user; }',
+      'await foreach (var user in ReadUsersAsync()) { }',
+      'await foreach (var user in stream.WithCancellation(ct)) { }'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Зависимость через конструктор.', code: 'class UsersService {\n  private readonly IUserRepo _repo;\n  public UsersService(IUserRepo repo) => _repo = repo;\n}' },
+      { title: 'Средний', note: 'Регистрация сервиса.', code: 'builder.Services.AddScoped<IUserRepo, SqlUserRepo>();\nbuilder.Services.AddSingleton<IClock, SystemClock>();\nbuilder.Services.AddTransient<UsersService>();' },
+      { title: 'Реальный', note: 'Потоковая обработка данных.', code: 'await foreach (var user in repo.ReadActiveAsync(ct)\n  .WithCancellation(ct)) {\n  await sender.SendAsync(user.Email, ct);\n}' }
+    ],
+    commonMistakes: [
+      'Создают new HttpClient или repo внутри сервиса — DI теряет смысл.',
+      'В Singleton кладут Scoped-зависимость — жизненные циклы конфликтуют.',
+      'Забывают CancellationToken в async streams — долгую операцию нельзя отменить.'
+    ],
+    importantNuances: [
+      'Constructor injection проще тестировать моками.',
+      'IAsyncEnumerable<T> не хранит всё в памяти, если источник тоже потоковый.',
+      'Scoped lifetime особенно важен для DbContext и request-сервисов.'
+    ],
+    checklist: [
+      'Передаю зависимости через конструктор.',
+      'Понимаю Singleton, Scoped и Transient.',
+      'Использую await foreach для IAsyncEnumerable.',
+      'Передаю CancellationToken в потоковые операции.'
+    ],
+    practiceHint: 'Тренируй сервисы, мокируемые зависимости и async pipeline.',
+    practiceCategory: 'async'
+  },
+  {
+    id: 'generics',
+    title: 'Generics и constraints',
+    shortTitle: 'Generics',
+    simpleExplanation: 'Generics позволяют писать типобезопасный код один раз для разных типов: List<T>, Dictionary<TKey,TValue>, Result<T>. Constraints ограничивают T, чтобы внутри метода были доступны нужные операции.',
+    howItWorks: 'Компилятор проверяет типы на этапе компиляции. Для value types JIT создаёт специализированный код, для reference types часто переиспользует. where сообщает какие требования есть к типу.',
+    syntax: [
+      'class Box<T> { public T Value { get; init; } }',
+      'T First<T>(IEnumerable<T> items) => items.First();',
+      'where T : class',
+      'where T : struct',
+      'where T : new()',
+      'where TKey : notnull'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Generic контейнер.', code: 'class Box<T> {\n  public T Value { get; }\n  public Box(T value) => Value = value;\n}\nvar box = new Box<int>(42);' },
+      { title: 'Средний', note: 'Result<T> без object и cast.', code: 'record Result<T>(T? Value, string? Error) {\n  public bool IsOk => Error is null;\n}' },
+      { title: 'Реальный', note: 'Constraint для фабрики.', code: 'T Create<T>() where T : new() {\n  return new T();\n}' }
+    ],
+    commonMistakes: [
+      'Используют object вместо T — теряют типобезопасность и получают cast.',
+      'Добавляют слишком жёсткий constraint заранее — переиспользование хуже.',
+      'Забывают notnull для ключей Dictionary-подобных типов.'
+    ],
+    importantNuances: [
+      'Generic invariance: List<string> не является List<object>.',
+      'out T — covariance только для чтения, in T — contravariance для входа.',
+      'default(T) может быть null для reference type и zero-value для value type.'
+    ],
+    checklist: [
+      'Пишу generic там где тип должен сохраняться до результата.',
+      'Использую constraints только по реальной нужде.',
+      'Понимаю default(T) и nullable в generic-коде.',
+      'Не заменяю generics на object.'
+    ],
+    practiceHint: 'Generics полезны в структурах данных, Result<T> и алгоритмах.',
+    practiceCategory: 'algorithms'
+  },
+  {
+    id: 'files-disposable',
+    title: 'Файлы, using и IDisposable',
+    shortTitle: 'Files',
+    simpleExplanation: 'Файлы, потоки, соединения и таймеры надо освобождать. using/using var вызывает Dispose автоматически. await using делает то же для IAsyncDisposable.',
+    howItWorks: 'IDisposable описывает синхронное освобождение ресурса. using превращается в try/finally с вызовом Dispose. Для асинхронного освобождения есть IAsyncDisposable и await using.',
+    syntax: [
+      'using var stream = File.OpenRead(path);',
+      'using (var reader = new StreamReader(path)) { }',
+      'var text = await File.ReadAllTextAsync(path, ct);',
+      'await using var conn = await OpenConnectionAsync(ct);',
+      'public void Dispose() { /* cleanup */ }'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Прочитать файл целиком.', code: 'string text = await File.ReadAllTextAsync(path, ct);\nConsole.WriteLine(text.Length);' },
+      { title: 'Средний', note: 'using var для потока.', code: 'using var stream = File.OpenRead(path);\nusing var reader = new StreamReader(stream);\nvar firstLine = await reader.ReadLineAsync(ct);' },
+      { title: 'Реальный', note: 'await using для async cleanup.', code: 'await using var tx = await db.BeginTransactionAsync(ct);\nawait SaveAsync(order, ct);\nawait tx.CommitAsync(ct);' }
+    ],
+    commonMistakes: [
+      'Открывают Stream без using — файл остаётся заблокированным.',
+      'Читают огромный файл через ReadAllText — память растёт резко.',
+      'Смешивают sync и async I/O в одном горячем пути.'
+    ],
+    importantNuances: [
+      'File.ReadLines лениво читает строки, ReadAllLines грузит всё сразу.',
+      'Dispose не обязан удалять объект из памяти, он освобождает внешний ресурс.',
+      'await using нужен только если тип реализует IAsyncDisposable.'
+    ],
+    checklist: [
+      'Оборачиваю disposable-ресурсы в using или await using.',
+      'Для больших файлов читаю потоково.',
+      'Передаю CancellationToken в async I/O.',
+      'Не держу файл открытым дольше нужного.'
+    ],
+    practiceHint: 'Практикуй чтение файлов, потоковую обработку и cleanup ресурсов.',
+    practiceCategory: 'async'
   }
 ];
 

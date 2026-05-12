@@ -307,6 +307,227 @@ export const THEORY_TOPICS = [
     ],
     practiceHint: 'DOM-задачи тренируют именно эти паттерны: обновление UI, списки, события.',
     practiceCategory: 'dom'
+  },
+  {
+    id: 'classes-prototypes',
+    title: 'Классы и прототипы',
+    shortTitle: 'Классы',
+    simpleExplanation: 'class в JavaScript — удобный синтаксис над прототипами. Объекты делегируют поиск свойств по цепочке prototype. Классы нужны для общих методов, конструкторов и понятной модели данных.',
+    howItWorks: 'Методы class попадают в Constructor.prototype. При чтении obj.method JS сначала ищет свойство у obj, потом в прототипе, потом выше по цепочке. extends связывает прототипы, а super вызывает родительский конструктор или метод.',
+    syntax: [
+      'class User {\n  constructor(name) { this.name = name; }\n  greet() { return `Hi, ${this.name}`; }\n}',
+      'class Admin extends User {\n  constructor(name, role) {\n    super(name);\n    this.role = role;\n  }\n}',
+      'User.prototype.isUser = true;',
+      'Object.create(proto)',
+      'Object.getPrototypeOf(obj)'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Метод один на все экземпляры.', code: 'class Counter {\n  constructor() { this.value = 0; }\n  inc() { return ++this.value; }\n}\nconst c = new Counter();\nconsole.log(c.inc()); // 1' },
+      { title: 'Средний', note: 'Наследование через extends и super.', code: 'class ApiError extends Error {\n  constructor(status, message) {\n    super(message);\n    this.status = status;\n  }\n}\nthrow new ApiError(404, "Not found");' },
+      { title: 'Реальный', note: 'Прототип полезен для общих методов без копирования.', code: 'function Task(title) {\n  this.title = title;\n}\nTask.prototype.done = function () {\n  return `${this.title}: done`;\n};' }
+    ],
+    commonMistakes: [
+      'Пишут методы как стрелки в prototype — this берётся не от экземпляра.',
+      'Забывают new при вызове конструктора и получают ошибку или неожиданный this.',
+      'Думают что class даёт приватность автоматически — обычные поля публичные.'
+    ],
+    importantNuances: [
+      'Приватные поля пишутся через #name и доступны только внутри класса.',
+      'Методы класса не перечисляются в for...in.',
+      'Композиция часто проще наследования: объект с нужными функциями вместо глубокой иерархии.'
+    ],
+    checklist: [
+      'Понимаю что class — синтаксис над прототипами.',
+      'Знаю как работает цепочка prototype.',
+      'Умею использовать constructor, extends и super.',
+      'Не теряю this при передаче методов как callback.'
+    ],
+    practiceHint: 'Задачи на объекты хорошо закрепляют классы: модели данных, методы, наследование и проверка this.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'modules',
+    title: 'Модули import/export',
+    shortTitle: 'Модули',
+    simpleExplanation: 'ES modules делят код на файлы с явными зависимостями. export отдаёт значения наружу, import подключает их в другом файле. Это замена глобальным переменным и ручному порядку script-тегов.',
+    howItWorks: 'Модуль выполняется один раз, его exports кешируются. import статичен: движок заранее строит граф зависимостей. Именованные exports импортируются по имени, default export — под любым локальным именем.',
+    syntax: [
+      'export const sum = (a, b) => a + b;',
+      'export function formatDate(date) { return date.toISOString(); }',
+      'export default class User {}',
+      'import { sum, formatDate } from "./utils.js";',
+      'import User from "./User.js";',
+      'const mod = await import("./feature.js");'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Именованный экспорт хорошо читается.', code: '// math.js\nexport const square = (x) => x * x;\n\n// app.js\nimport { square } from "./math.js";\nconsole.log(square(5));' },
+      { title: 'Средний', note: 'Переименование решает конфликт имён.', code: 'import { readFile as readText } from "./fs.js";\nimport { readFile as readConfig } from "./config.js";\n\nconst text = await readText("data.txt");' },
+      { title: 'Реальный', note: 'Динамический import грузит редкую фичу по требованию.', code: 'async function openEditor() {\n  const { createEditor } = await import("./editor.js");\n  return createEditor(document.querySelector("#root"));\n}' }
+    ],
+    commonMistakes: [
+      'Путают default и named import: import x не равно import { x }.',
+      'Забывают расширение .js в браузерных ES modules.',
+      'Создают циклические зависимости и получают undefined на старте.'
+    ],
+    importantNuances: [
+      'Imports live-binding: если экспортируемая переменная меняется, импорт видит новое значение.',
+      'Код модуля всегда в strict mode.',
+      'Top-level await работает в ES modules, но может задержать импортирующие модули.'
+    ],
+    checklist: [
+      'Различаю named export и default export.',
+      'Умею переименовывать import через as.',
+      'Понимаю что модуль выполняется один раз.',
+      'Стараюсь держать зависимости направленными, без циклов.'
+    ],
+    practiceHint: 'Задачи на функции удобно раскладывать по модулям: чистые helpers, импорт в основной файл и явный export результата.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'errors',
+    title: 'Ошибки и try/catch',
+    shortTitle: 'Ошибки',
+    simpleExplanation: 'Ошибки — нормальный способ остановить невозможный сценарий и передать причину выше. try/catch ловит синхронные ошибки и rejected Promise внутри await. finally выполняется всегда.',
+    howItWorks: 'throw прерывает текущий стек вызовов, пока не найдётся ближайший catch. Error хранит message и stack. В async-функции throw превращается в rejected Promise, поэтому его ловят через await + try/catch или .catch().',
+    syntax: [
+      'try {\n  risky();\n} catch (err) {\n  console.error(err.message);\n} finally {\n  cleanup();\n}',
+      'throw new Error("Invalid state");',
+      'class ValidationError extends Error {}',
+      'await promise.catch((err) => fallback(err));'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Проверка входных данных через throw.', code: 'function divide(a, b) {\n  if (b === 0) throw new Error("Division by zero");\n  return a / b;\n}' },
+      { title: 'Средний', note: 'finally освобождает ресурс даже при ошибке.', code: 'let locked = false;\ntry {\n  locked = true;\n  saveData();\n} finally {\n  locked = false;\n}' },
+      { title: 'Реальный', note: 'Своя ошибка помогает отличить ожидаемый сбой.', code: 'class AuthError extends Error {}\n\ntry {\n  await login(user);\n} catch (err) {\n  if (err instanceof AuthError) showLoginError(err.message);\n  else throw err;\n}' }
+    ],
+    commonMistakes: [
+      'Ловят ошибку и молча игнорируют — баг становится невидимым.',
+      'Бросают строки: throw "bad" вместо throw new Error("bad").',
+      'Ожидают что try/catch поймает ошибку внутри setTimeout без отдельного try.'
+    ],
+    importantNuances: [
+      'catch без параметра возможен: catch { ... }, если объект ошибки не нужен.',
+      'finally выполнится перед выходом из try/catch даже при return.',
+      'Для async кода без await нужен .catch(), иначе ошибка уйдёт в rejected Promise.'
+    ],
+    checklist: [
+      'Бросаю Error или наследника Error, не строки.',
+      'Не глотаю ошибки без логирования или fallback.',
+      'Умею ловить ошибки async/await через try/catch.',
+      'Использую finally для очистки ресурсов и флагов.'
+    ],
+    practiceHint: 'Async-задачи часто требуют обработки ошибок: retry, fallback, allSettled и понятный возврат результата.',
+    practiceCategory: 'async'
+  },
+  {
+    id: 'map-set',
+    title: 'Map и Set',
+    shortTitle: 'Map/Set',
+    simpleExplanation: 'Map — коллекция ключ-значение, где ключом может быть что угодно. Set — коллекция уникальных значений. Они удобнее обычных объектов и массивов, когда важны быстрый поиск, уникальность и частоты.',
+    howItWorks: 'Map и Set хранят элементы по хэш-подобной структуре и сравнивают ключи через SameValueZero: NaN равен NaN, 0 и -0 считаются одним значением. Порядок перебора — порядок вставки.',
+    syntax: [
+      'const map = new Map();\nmap.set("a", 1);\nmap.get("a");\nmap.has("a");\nmap.delete("a");',
+      'const set = new Set([1, 2, 2, 3]);',
+      'set.add(4);\nset.has(2);\nset.delete(1);',
+      'for (const [key, value] of map) {}',
+      'const unique = [...new Set(items)];'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Убрать дубликаты из массива.', code: 'const tags = ["js", "css", "js"];\nconst uniqueTags = [...new Set(tags)];\n// ["js", "css"]' },
+      { title: 'Средний', note: 'Частоты через Map без проблем с prototype-ключами.', code: 'const freq = new Map();\nfor (const word of words) {\n  freq.set(word, (freq.get(word) ?? 0) + 1);\n}' },
+      { title: 'Реальный', note: 'Кэш по объекту-ключу невозможен через обычный объект.', code: 'const cache = new Map();\nfunction getMeta(node) {\n  if (!cache.has(node)) cache.set(node, readMeta(node));\n  return cache.get(node);\n}' }
+    ],
+    commonMistakes: [
+      'Читают map.key вместо map.get("key") — Map не работает как обычный объект.',
+      'Хранят объекты в Set и ждут сравнение по содержимому — сравнение идёт по ссылке.',
+      'Забывают что JSON.stringify(new Map()) даст {}, нужна конвертация.'
+    ],
+    importantNuances: [
+      'WeakMap и WeakSet не мешают сборке мусора, но не перебираются.',
+      'Map сохраняет порядок вставки, это удобно для стабильного вывода.',
+      'Object.fromEntries(map) превращает Map со строковыми ключами в объект.'
+    ],
+    checklist: [
+      'Использую Set для уникальности.',
+      'Использую Map для частот, кэшей и ключей-объектов.',
+      'Помню что объекты сравниваются по ссылке.',
+      'Умею конвертировать Map/Set в массив через spread.'
+    ],
+    practiceHint: 'Задачи на массивы часто решаются через Set для уникальности и Map для подсчёта частот.',
+    practiceCategory: 'arrays'
+  },
+  {
+    id: 'event-loop',
+    title: 'Event loop и очереди задач',
+    shortTitle: 'Event loop',
+    simpleExplanation: 'Event loop объясняет порядок выполнения асинхронного JS. Синхронный код идёт первым, microtasks (Promise.then, queueMicrotask) — сразу после него, macrotasks (setTimeout, события) — позже.',
+    howItWorks: 'Движок выполняет call stack до пустоты. Потом вычищает очередь microtasks. Затем берёт одну macrotask, снова выполняет stack и снова microtasks. Поэтому Promise.then обычно раньше setTimeout(..., 0).',
+    syntax: [
+      'console.log("sync");',
+      'Promise.resolve().then(() => console.log("micro"));',
+      'queueMicrotask(() => console.log("microtask"));',
+      'setTimeout(() => console.log("macro"), 0);',
+      'requestAnimationFrame(() => console.log("paint-ready"));'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Порядок: sync → microtask → macrotask.', code: 'console.log(1);\nsetTimeout(() => console.log(2), 0);\nPromise.resolve().then(() => console.log(3));\nconsole.log(4);\n// 1, 4, 3, 2' },
+      { title: 'Средний', note: 'await продолжает функцию через microtask.', code: 'async function run() {\n  console.log("A");\n  await null;\n  console.log("B");\n}\nrun();\nconsole.log("C");\n// A, C, B' },
+      { title: 'Реальный', note: 'Разбить тяжёлую работу, чтобы UI не зависал.', code: 'async function processChunks(items) {\n  for (let i = 0; i < items.length; i += 100) {\n    handle(items.slice(i, i + 100));\n    await new Promise(r => setTimeout(r, 0));\n  }\n}' }
+    ],
+    commonMistakes: [
+      'Думают что setTimeout(fn, 0) выполнится мгновенно — он ждёт свободный stack и microtasks.',
+      'Создают бесконечную цепочку microtasks и блокируют rendering.',
+      'Путают параллельность с асинхронностью: JS-код в одном потоке выполняется по очереди.'
+    ],
+    importantNuances: [
+      'Microtasks выполняются до перерисовки, поэтому длинная цепочка Promise может подвесить UI.',
+      'Web APIs и Node APIs выполняют работу вне JS stack, но callback возвращается через очередь.',
+      'В Node.js есть свои очереди: process.nextTick и setImmediate имеют отдельные правила.'
+    ],
+    checklist: [
+      'Могу предсказать порядок sync / Promise / setTimeout.',
+      'Понимаю разницу microtask и macrotask.',
+      'Знаю что await продолжает выполнение асинхронно.',
+      'Разбиваю тяжёлые задачи, чтобы не блокировать UI.'
+    ],
+    practiceHint: 'Async-задачи на порядок логов, retry и concurrency отлично тренируют event loop.',
+    practiceCategory: 'async'
+  },
+  {
+    id: 'iterators-generators',
+    title: 'Итераторы и генераторы',
+    shortTitle: 'Итераторы',
+    simpleExplanation: 'Итератор — объект с методом next(), который возвращает { value, done }. Iterable — объект с Symbol.iterator. Генератор function* создаёт итератор проще: yield отдаёт значения по одному.',
+    howItWorks: 'for...of просит у объекта Symbol.iterator() и вызывает next(), пока done не станет true. Генератор запоминает своё состояние между yield. Это удобно для ленивых последовательностей и обхода структур.',
+    syntax: [
+      'const iterable = {\n  *[Symbol.iterator]() {\n    yield 1;\n    yield 2;\n  }\n};',
+      'function* range(from, to) {\n  for (let i = from; i <= to; i++) yield i;\n}',
+      'const it = range(1, 3);\nit.next(); // { value: 1, done: false }',
+      'for (const n of range(1, 3)) console.log(n);'
+    ],
+    examples: [
+      { title: 'Простой', note: 'range без создания массива заранее.', code: 'function* range(n) {\n  for (let i = 0; i < n; i++) yield i;\n}\nconsole.log([...range(3)]); // [0, 1, 2]' },
+      { title: 'Средний', note: 'Свой iterable для объекта.', code: 'const bag = {\n  items: ["a", "b"],\n  *[Symbol.iterator]() {\n    yield* this.items;\n  }\n};\nfor (const item of bag) console.log(item);' },
+      { title: 'Реальный', note: 'Ленивый обход дерева.', code: 'function* walk(node) {\n  yield node.value;\n  for (const child of node.children ?? []) {\n    yield* walk(child);\n  }\n}' }
+    ],
+    commonMistakes: [
+      'Путают iterable и iterator: iterable создаёт iterator через Symbol.iterator.',
+      'Забывают что генератор ленивый — код внутри не выполняется до next() или for...of.',
+      'Используют for...in вместо for...of для перебора значений.'
+    ],
+    importantNuances: [
+      'Массивы, строки, Map, Set уже iterable.',
+      'yield* делегирует генерацию другому iterable.',
+      'Async generators пишутся как async function* и перебираются через for await...of.'
+    ],
+    checklist: [
+      'Понимаю протокол iterator: next(), value, done.',
+      'Знаю роль Symbol.iterator.',
+      'Умею писать function* и yield.',
+      'Использую генераторы для ленивых последовательностей и обходов.'
+    ],
+    practiceHint: 'Задачи на массивы и обход структур можно усложнять генераторами: range, flatten, walk tree.',
+    practiceCategory: 'arrays'
   }
 ];
 
@@ -320,7 +541,13 @@ const PRACTICE_ROUTES = {
   objects: 'objects',
   closures: 'closures',
   async: 'async',
-  dom: 'dom'
+  dom: 'dom',
+  'classes-prototypes': 'objects',
+  modules: 'functions',
+  errors: 'async',
+  'map-set': 'arrays',
+  'event-loop': 'async',
+  'iterators-generators': 'arrays'
 };
 
 export function getTheoryTopicById(id) {

@@ -186,6 +186,300 @@ export const THEORY_TOPICS = [
     ],
     practiceHint: 'Функции и замыкания в Java — через лямбды и функциональные интерфейсы.',
     practiceCategory: 'functions'
+  },
+  {
+    id: 'exceptions',
+    title: 'Исключения',
+    shortTitle: 'Исключения',
+    simpleExplanation: 'Исключения — способ сообщить об ошибке без кодов возврата. try/catch ловит ошибку, finally выполняется почти всегда. Checked exceptions надо объявлять через throws или обрабатывать.',
+    howItWorks: 'throw создаёт исключение и поднимает его вверх по стеку. catch выбирает первый подходящий тип. try-with-resources автоматически закрывает AutoCloseable ресурсы: файлы, сокеты, потоки.',
+    syntax: [
+      'try {\n  risky();\n} catch (IOException e) {\n  log.error(e.getMessage());\n} finally {\n  cleanup();\n}',
+      'void read() throws IOException { ... }',
+      'throw new IllegalArgumentException("bad id");',
+      'try (var in = Files.newInputStream(path)) {\n  // ресурс закроется сам\n}'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Проверка аргумента.', code: 'void setAge(int age) {\n  if (age < 0)\n    throw new IllegalArgumentException("age < 0");\n  this.age = age;\n}' },
+      { title: 'Средний', note: 'Checked exception у файла.', code: 'String read(Path path) throws IOException {\n  return Files.readString(path);\n}' },
+      { title: 'Реальный', note: 'Своя ошибка домена.', code: 'class NotEnoughMoneyException extends RuntimeException {\n  NotEnoughMoneyException(String msg) { super(msg); }\n}\n\nvoid withdraw(int amount) {\n  if (amount > balance) throw new NotEnoughMoneyException("low balance");\n}' }
+    ],
+    commonMistakes: [
+      'Ловят Exception слишком широко — скрывают реальные причины ошибки.',
+      'Пустой catch — программа молча ломается и теряется диагностика.',
+      'Используют exceptions для обычной логики в цикле — это дорого и нечитабельно.'
+    ],
+    importantNuances: [
+      'RuntimeException — unchecked: компилятор не требует catch/throws.',
+      'IOException, SQLException — checked: контракт метода должен это показать.',
+      'В catch сначала идут более конкретные типы, потом общие.'
+    ],
+    checklist: [
+      'Бросаю IllegalArgumentException для плохих аргументов.',
+      'Не глушу исключения без логирования или обработки.',
+      'Использую try-with-resources для AutoCloseable.',
+      'Разделяю checked и unchecked exceptions.'
+    ],
+    practiceHint: 'Ошибки и валидация — хорошая практика для задач на объекты и ввод.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'generics',
+    title: 'Generics',
+    shortTitle: 'Generics',
+    simpleExplanation: 'Generics позволяют писать типобезопасный код без cast: List<String>, Map<String, Integer>. Тип T задаётся при объявлении класса, метода или интерфейса.',
+    howItWorks: 'В Java generics работают через type erasure: информация о T в основном стирается во время компиляции. Поэтому нельзя new T() и нельзя проверить obj instanceof List<String>.',
+    syntax: [
+      'class Box<T> {\n  private T value;\n  T get() { return value; }\n}',
+      'static <T> T first(List<T> list) { return list.get(0); }',
+      'List<? extends Number> readOnlyNumbers;',
+      'List<? super Integer> integerSink;'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Контейнер без cast.', code: 'Box<String> box = new Box<>();\nbox.set("java");\nString value = box.get();' },
+      { title: 'Средний', note: 'Generic method.', code: 'static <T> Optional<T> first(List<T> items) {\n  return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));\n}' },
+      { title: 'Реальный', note: 'PECS для wildcard.', code: 'void copy(List<? extends Number> src, List<? super Number> dst) {\n  for (Number n : src) dst.add(n);\n}' }
+    ],
+    commonMistakes: [
+      'Используют raw type List вместо List<String> — теряют типобезопасность.',
+      'Пытаются создать new T() — из-за type erasure так нельзя.',
+      'Путают extends и super в wildcard — коллекция становится неудобной для записи или чтения.'
+    ],
+    importantNuances: [
+      'PECS: Producer Extends, Consumer Super.',
+      'List<Integer> не является List<Number>, generics инвариантны.',
+      'Diamond <> выводит тип справа: new ArrayList<String>() можно писать new ArrayList<>().'
+    ],
+    checklist: [
+      'Не использую raw types.',
+      'Понимаю type erasure и ограничения generics.',
+      'Использую ? extends для чтения, ? super для записи.',
+      'Пишу generic methods когда тип зависит от аргументов.'
+    ],
+    practiceHint: 'Generics чаще всего встречаются в коллекциях и переиспользуемых структурах данных.',
+    practiceCategory: 'arrays'
+  },
+  {
+    id: 'optional-null-safety',
+    title: 'Optional и null safety',
+    shortTitle: 'Optional',
+    simpleExplanation: 'null означает отсутствие значения, но легко приводит к NullPointerException. Optional<T> делает отсутствие явным в API: значение есть или его нет.',
+    howItWorks: 'Optional обычно возвращают из методов, где результат может отсутствовать. map/flatMap/filter позволяют обработать значение без if. orElse/orElseGet дают запасной вариант.',
+    syntax: [
+      'Optional<String> name = Optional.of("Ann");',
+      'Optional<String> empty = Optional.empty();',
+      'userOpt.map(User::email).orElse("n/a");',
+      'value != null ? value : fallback',
+      'Objects.requireNonNull(value, "value");'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Безопасный fallback.', code: 'String label = findName(id)\n  .orElse("unknown");' },
+      { title: 'Средний', note: 'Цепочка без NPE.', code: 'String email = findUser(id)\n  .map(User::profile)\n  .map(Profile::email)\n  .orElse("no-email");' },
+      { title: 'Реальный', note: 'Валидация входа.', code: 'Order create(User user) {\n  Objects.requireNonNull(user, "user");\n  return new Order(user.id());\n}' }
+    ],
+    commonMistakes: [
+      'Вызывают optional.get() без isPresent — тот же риск, что и null.',
+      'Кладут Optional в поля DTO — чаще это усложняет сериализацию и модели.',
+      'Используют orElse(expensive()) — expensive выполнится даже когда значение есть.'
+    ],
+    importantNuances: [
+      'orElseGet(() -> expensive()) ленивый, orElse(value) eager.',
+      'Optional не заменяет валидацию входных параметров.',
+      'Публичный API лучше явно документировать: null запрещён или допустим.'
+    ],
+    checklist: [
+      'Возвращаю Optional из поиска, где результат может отсутствовать.',
+      'Не вызываю get() без проверки.',
+      'Использую orElseGet для дорогого fallback.',
+      'Проверяю обязательные параметры через Objects.requireNonNull.'
+    ],
+    practiceHint: 'Задачи на поиск и фильтрацию хорошо тренируют Optional вместо null.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'concurrency-basics',
+    title: 'Основы многопоточности',
+    shortTitle: 'Потоки',
+    simpleExplanation: 'Многопоточность позволяет выполнять работу параллельно, но общие данные становятся опасными. Главное: не делить изменяемое состояние или защищать его.',
+    howItWorks: 'Thread запускает код в отдельном потоке. ExecutorService управляет пулом потоков. synchronized, Lock и concurrent-коллекции защищают доступ к shared state.',
+    syntax: [
+      'Thread t = new Thread(() -> work());\nt.start();\nt.join();',
+      'ExecutorService pool = Executors.newFixedThreadPool(4);',
+      'Future<Integer> f = pool.submit(() -> 42);',
+      'synchronized (lock) {\n  counter++;\n}',
+      'CompletableFuture.supplyAsync(() -> load())'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Запуск потока.', code: 'Thread worker = new Thread(() -> System.out.println("work"));\nworker.start();\nworker.join();' },
+      { title: 'Средний', note: 'Пул потоков.', code: 'var pool = Executors.newFixedThreadPool(4);\nFuture<Integer> future = pool.submit(() -> heavyCalc());\nInteger result = future.get();\npool.shutdown();' },
+      { title: 'Реальный', note: 'AtomicInteger для счётчика.', code: 'var counter = new AtomicInteger();\nitems.parallelStream().forEach(item -> counter.incrementAndGet());\nSystem.out.println(counter.get());' }
+    ],
+    commonMistakes: [
+      'Инкрементируют общий int из разных потоков — race condition.',
+      'Забывают shutdown у ExecutorService — приложение не завершается.',
+      'Держат lock во время долгого I/O — блокируют остальные потоки.'
+    ],
+    importantNuances: [
+      'volatile даёт видимость изменений, но не делает операции атомарными.',
+      'ConcurrentHashMap лучше synchronized HashMap для конкурентного доступа.',
+      'CompletableFuture удобен для цепочек async-операций.'
+    ],
+    checklist: [
+      'Не делю mutable state без защиты.',
+      'Использую ExecutorService вместо ручного создания многих Thread.',
+      'Закрываю пул через shutdown.',
+      'Понимаю разницу atomic, synchronized и volatile.'
+    ],
+    practiceHint: 'Параллельность тренируется на задачах со счётчиками, очередями и async pipeline.',
+    practiceCategory: 'async'
+  },
+  {
+    id: 'records-sealed',
+    title: 'Records и sealed типы',
+    shortTitle: 'Records/sealed',
+    simpleExplanation: 'record — короткий способ описать immutable data-класс. sealed ограничивает, кто может наследоваться от класса или реализовать интерфейс.',
+    howItWorks: 'Record автоматически создаёт constructor, accessors, equals, hashCode и toString. Sealed hierarchy делает набор подтипов явным: permits перечисляет разрешённых наследников.',
+    syntax: [
+      'record Point(int x, int y) {}',
+      'record User(String name, int age) {\n  User {\n    if (age < 0) throw new IllegalArgumentException();\n  }\n}',
+      'sealed interface Shape permits Circle, Rect {}',
+      'final class Circle implements Shape {}',
+      'non-sealed class Rect implements Shape {}'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Data object без boilerplate.', code: 'record Point(int x, int y) {}\nvar p = new Point(3, 4);\nSystem.out.println(p.x());' },
+      { title: 'Средний', note: 'Валидация в compact constructor.', code: 'record Email(String value) {\n  Email {\n    if (!value.contains("@")) throw new IllegalArgumentException("bad email");\n  }\n}' },
+      { title: 'Реальный', note: 'Закрытая иерархия событий.', code: 'sealed interface Event permits Login, Logout {}\nrecord Login(String user) implements Event {}\nrecord Logout(String user) implements Event {}' }
+    ],
+    commonMistakes: [
+      'Пытаются использовать record для изменяемой сущности — record лучше для value/data objects.',
+      'Кладут mutable коллекцию в record и думают что он полностью immutable.',
+      'Забывают final, sealed или non-sealed у наследников sealed-типа.'
+    ],
+    importantNuances: [
+      'Record final по умолчанию и не может наследоваться от другого класса.',
+      'Accessors у record называются name(), а не getName().',
+      'Sealed типы хорошо работают с pattern matching и исчерпывающими проверками.'
+    ],
+    checklist: [
+      'Использую record для небольших immutable данных.',
+      'Проверяю инварианты в compact constructor.',
+      'Защищаю mutable поля копиями, если они есть.',
+      'Понимаю permits и требования к наследникам sealed.'
+    ],
+    practiceHint: 'Records удобны в задачах на точки, интервалы, DTO и результаты вычислений.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'packages-build',
+    title: 'Пакеты и сборка',
+    shortTitle: 'Пакеты/build',
+    simpleExplanation: 'package группирует классы и задаёт namespace. import подключает классы из других пакетов. Maven и Gradle собирают проект, скачивают зависимости и запускают тесты.',
+    howItWorks: 'Путь файла должен соответствовать package: com.example.User лежит в com/example/User.java. Build tool читает pom.xml или build.gradle и строит lifecycle: compile, test, package.',
+    syntax: [
+      'package com.example.app;',
+      'import java.util.List;',
+      'import static java.util.Comparator.comparing;',
+      'javac -d out src/com/example/App.java',
+      'mvn test',
+      'gradle build'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Класс в пакете.', code: 'package com.acme.shop;\n\npublic class Product {\n  private final String name;\n  public Product(String name) { this.name = name; }\n}' },
+      { title: 'Средний', note: 'Maven dependency.', code: '<dependency>\n  <groupId>org.junit.jupiter</groupId>\n  <artifactId>junit-jupiter</artifactId>\n  <version>5.10.0</version>\n  <scope>test</scope>\n</dependency>' },
+      { title: 'Реальный', note: 'Gradle application plugin.', code: 'plugins { id("application") }\n\napplication {\n  mainClass.set("com.acme.Main")\n}' }
+    ],
+    commonMistakes: [
+      'Package не совпадает с папками — IDE и сборка начинают конфликтовать.',
+      'Используют wildcard imports везде — хуже читается источник класса.',
+      'Коммитят build/target как исходники — это артефакты сборки.'
+    ],
+    importantNuances: [
+      'public class должен лежать в файле с тем же именем.',
+      'default package не подходит для реальных проектов.',
+      'Maven чаще декларативный, Gradle гибче и программируется через DSL.'
+    ],
+    checklist: [
+      'Держу package и путь файла синхронными.',
+      'Понимаю compile/test/package lifecycle.',
+      'Отделяю production dependencies от test dependencies.',
+      'Не храню артефакты сборки в исходниках.'
+    ],
+    practiceHint: 'Сборка важна для проектов с несколькими классами, тестами и внешними библиотеками.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'annotations',
+    title: 'Аннотации',
+    shortTitle: 'Аннотации',
+    simpleExplanation: 'Аннотации — метаданные для компилятора, инструментов и runtime-фреймворков. @Override проверяет переопределение, @Deprecated помечает устаревший API.',
+    howItWorks: 'Аннотация может храниться только в исходниках, в class-файле или быть доступной через reflection. RetentionPolicy задаёт срок жизни, Target — где её можно ставить.',
+    syntax: [
+      '@Override\npublic String toString() { return "User"; }',
+      '@Deprecated(forRemoval = true)',
+      '@Retention(RetentionPolicy.RUNTIME)\n@Target(ElementType.METHOD)\n@interface RequiresRole {\n  String value();\n}',
+      'method.getAnnotation(RequiresRole.class)'
+    ],
+    examples: [
+      { title: 'Простой', note: '@Override ловит опечатки.', code: 'class User {\n  @Override\n  public String toString() {\n    return "User";\n  }\n}' },
+      { title: 'Средний', note: 'Своя runtime-аннотация.', code: '@Retention(RetentionPolicy.RUNTIME)\n@Target(ElementType.TYPE)\n@interface Table {\n  String value();\n}\n\n@Table("users")\nclass User {}' },
+      { title: 'Реальный', note: 'Поиск аннотации через reflection.', code: 'Table table = User.class.getAnnotation(Table.class);\nif (table != null) {\n  System.out.println(table.value());\n}' }
+    ],
+    commonMistakes: [
+      'Забывают @Retention(RUNTIME), а потом ищут аннотацию через reflection.',
+      'Используют аннотации как замену нормальной логике — становится трудно отлаживать.',
+      'Игнорируют @Override — компилятор не помогает ловить ошибки переопределения.'
+    ],
+    importantNuances: [
+      'SOURCE аннотации видны только компилятору и annotation processors.',
+      'RUNTIME аннотации доступны через reflection, но reflection не бесплатен.',
+      'Многие фреймворки Java (Spring, JPA, JUnit) строятся вокруг аннотаций.'
+    ],
+    checklist: [
+      'Ставлю @Override на переопределённые методы.',
+      'Понимаю RetentionPolicy SOURCE/CLASS/RUNTIME.',
+      'Указываю Target для своих аннотаций.',
+      'Не прячу бизнес-логику в магию аннотаций.'
+    ],
+    practiceHint: 'Аннотации полезны в задачах на reflection, тестовые фреймворки и конфигурацию.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'io-files',
+    title: 'Файлы и I/O',
+    shortTitle: 'I/O',
+    simpleExplanation: 'I/O в Java — работа с файлами, потоками байтов и текстом. Современный API — java.nio.file: Path, Files, StandardOpenOption.',
+    howItWorks: 'Path описывает путь, Files выполняет операции. Для маленьких файлов удобны readString/writeString. Для больших данных используют stream/reader и try-with-resources.',
+    syntax: [
+      'Path path = Path.of("data.txt");',
+      'String text = Files.readString(path);',
+      'Files.writeString(path, "hello");',
+      'try (var lines = Files.lines(path)) {\n  lines.forEach(System.out::println);\n}',
+      'Files.createDirectories(Path.of("out/logs"));'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Прочитать текстовый файл.', code: 'Path path = Path.of("input.txt");\nString text = Files.readString(path);\nSystem.out.println(text);' },
+      { title: 'Средний', note: 'Записать строки.', code: 'var lines = List.of("one", "two", "three");\nFiles.write(Path.of("out.txt"), lines, StandardCharsets.UTF_8);' },
+      { title: 'Реальный', note: 'Стрим строк закрывается автоматически.', code: 'try (var lines = Files.lines(Path.of("log.txt"))) {\n  long errors = lines.filter(s -> s.contains("ERROR")).count();\n  System.out.println(errors);\n}' }
+    ],
+    commonMistakes: [
+      'Не закрывают поток — файл остаётся занятым, данные могут не записаться.',
+      'Читают огромный файл через readString — можно упереться в память.',
+      'Склеивают пути строками через "/" — ломается переносимость.'
+    ],
+    importantNuances: [
+      'try-with-resources закрывает Reader, Writer, Stream и другие AutoCloseable.',
+      'Charset лучше указывать явно, особенно для обмена файлами.',
+      'Files.lines ленивый и держит файл открытым до закрытия stream.'
+    ],
+    checklist: [
+      'Использую Path.of и Files вместо ручной склейки путей.',
+      'Закрываю ресурсы через try-with-resources.',
+      'Выбираю readString только для небольших файлов.',
+      'Указываю кодировку при чтении и записи текста.'
+    ],
+    practiceHint: 'I/O пригодится для задач на парсинг входных файлов, логов и отчётов.',
+    practiceCategory: 'arrays'
   }
 ];
 

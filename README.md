@@ -404,6 +404,41 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
 
+### 2026-05-12 — Codex — expanded language theory coverage
+
+**Request:** отправить по агенту на каждый язык, расширить теорию почти во всех языках, а в конце проверить самому.
+
+**Changed files:**
+- `README.md`
+- `studingJS/package.json`
+- `studingJS/src/renderer/theoryContent.c.mjs`
+- `studingJS/src/renderer/theoryContent.cpp.mjs`
+- `studingJS/src/renderer/theoryContent.csharp.mjs`
+- `studingJS/src/renderer/theoryContent.go.mjs`
+- `studingJS/src/renderer/theoryContent.java.mjs`
+- `studingJS/src/renderer/theoryContent.js.mjs`
+- `studingJS/src/renderer/theoryContent.mjs`
+- `studingJS/src/tests/theoryCoverageTest.js`
+
+**What changed:**
+- Через параллельных агентов расширены theory topics по всем языкам: JS 8→14, Python 14→19, Go 6→12, C 5→10, C++ 5→13, C# 5→13, Java 5→13.
+- Добавлены темы про модули, ошибки, event loop, декораторы, context managers, Go interfaces/context/generics, C memory/preprocessor/file I/O/UB, C++ move/exceptions/lambdas/build/concurrency, C# nullable/records/events/generics/disposable, Java exceptions/generics/Optional/concurrency/records/packages/annotations/files.
+- Добавлен `npm run theory:coverage`, который проверяет минимальное число тем, обязательные поля, 3 examples и HTML-render для всех языков.
+
+**Verification:**
+- `npm run theory:coverage` — passed, 94 topics across 7 languages.
+- `npm run theory:content` — passed.
+- inline all-language import/render count — passed: js 14, python 19, go 12, c 10, cpp 13, csharp 13, java 13, total 94.
+- `git diff --check -- studingJS/package.json studingJS/src/renderer/theoryContent*.mjs studingJS/src/tests/theoryCoverageTest.js` — passed; Git показал только CRLF warning.
+- `npm run theory:scroll` — passed.
+- `node --check src/renderer/app.js` — passed.
+- `npm run smoke` — passed, 200 generated tasks.
+- Playwright CLI layout audit — passed for 94 topics at `1280x720` and `390x760`: `badCount: 0`, `contentOverflow: 0`, `codeOverflowCount: 0`.
+
+**Coordination notes:**
+- Агенты редактировали только свои `theoryContent*.mjs`; README, package.json, coverage-тест, финальные проверки, commit/push, installer и release остаются за Codex.
+- Временные Playwright audit-файлы и локальный static server удалены после проверки.
+
 ### 2026-05-12 — Codex — installer release refresh
 
 **Request:** каждый раз после изменений пушить в git, обновлять installer и заменять installer в GitHub Release.

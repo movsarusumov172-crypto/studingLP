@@ -188,6 +188,192 @@ export const THEORY_TOPICS = [
     ],
     practiceHint: 'Задачи на объекты отражают работу со структурами.',
     practiceCategory: 'objects'
+  },
+  {
+    id: 'dynamic-memory',
+    title: 'Динамическая память: malloc/free',
+    shortTitle: 'malloc/free',
+    simpleExplanation: 'Динамическая память нужна, когда размер данных неизвестен при компиляции. malloc/calloc/realloc выделяют память в куче, free возвращает её системе. В C за эту память отвечаешь ты.',
+    howItWorks: 'malloc возвращает void* на блок байт или NULL. calloc дополнительно зануляет память. realloc меняет размер блока и может перенести его в другое место. После free указатель становится dangling — его нельзя разыменовывать.',
+    syntax: [
+      'int *a = malloc(n * sizeof *a);',
+      'if (a == NULL) { /* обработать ошибку */ }',
+      'int *z = calloc(n, sizeof *z);',
+      'int *tmp = realloc(a, new_n * sizeof *a);',
+      'free(a);\na = NULL;'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Массив с размером из переменной.', code: 'int *nums = malloc(n * sizeof *nums);\nif (!nums) return 1;\nfor (int i = 0; i < n; i++) nums[i] = i * i;\nfree(nums);' },
+      { title: 'Средний', note: 'realloc через временный указатель.', code: 'int *tmp = realloc(nums, cap * 2 * sizeof *nums);\nif (!tmp) {\n  free(nums);\n  return 1;\n}\nnums = tmp;\ncap *= 2;' },
+      { title: 'Реальный', note: 'Узел linked list живёт в куче.', code: 'typedef struct Node { int value; struct Node *next; } Node;\nNode *node = malloc(sizeof *node);\nif (!node) return NULL;\nnode->value = value;\nnode->next = head;' }
+    ],
+    commonMistakes: [
+      'Не проверяют malloc на NULL и сразу пишут в память.',
+      'Теряют старый указатель при неудачном realloc: p = realloc(p, size).',
+      'Освобождают память дважды или используют указатель после free.'
+    ],
+    importantNuances: [
+      'Пиши sizeof *ptr, а не sizeof(Type): меньше риска ошибиться при смене типа.',
+      'free(NULL) безопасен, поэтому зануление указателя упрощает cleanup.',
+      'Каждый успешный malloc/calloc/realloc должен иметь понятного владельца и путь к free.'
+    ],
+    checklist: [
+      'Проверяю результат выделения памяти.',
+      'Использую временный указатель для realloc.',
+      'Освобождаю все ветки выхода из функции.',
+      'После free не читаю и не пишу через старый указатель.'
+    ],
+    practiceHint: 'Сделай динамический массив: grow через realloc, push, pop и cleanup без утечек.',
+    practiceCategory: 'arrays'
+  },
+  {
+    id: 'headers-preprocessor',
+    title: 'Заголовки и preprocessor',
+    shortTitle: 'Заголовки',
+    simpleExplanation: '.h файлы объявляют публичный интерфейс: типы, константы, прототипы функций. Preprocessor обрабатывает #include, #define и условную компиляцию до настоящей компиляции C-кода.',
+    howItWorks: '#include буквально подставляет содержимое файла. Include guard или #pragma once защищают от повторного включения. Макросы не знают типов, поэтому их нужно писать осторожно и с лишними скобками.',
+    syntax: [
+      '#ifndef USER_H\n#define USER_H\n\nint load_user(int id);\n\n#endif',
+      '#include <stdio.h>\n#include "user.h"',
+      '#define MAX(a, b) ((a) > (b) ? (a) : (b))',
+      '#ifdef DEBUG\nfprintf(stderr, "debug\\n");\n#endif',
+      'static inline int square(int x) { return x * x; }'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Прототип в заголовке, реализация в .c.', code: '// math_utils.h\n#ifndef MATH_UTILS_H\n#define MATH_UTILS_H\nint add(int a, int b);\n#endif\n\n// math_utils.c\nint add(int a, int b) { return a + b; }' },
+      { title: 'Средний', note: 'Макрос должен защищать аргументы скобками.', code: '#define SQUARE(x) ((x) * (x))\nint n = SQUARE(a + 1); // (a + 1) * (a + 1)' },
+      { title: 'Реальный', note: 'Feature flag для отладочного кода.', code: '#ifdef DEBUG\n#define LOG(msg) fprintf(stderr, "[debug] %s\\n", msg)\n#else\n#define LOG(msg) ((void)0)\n#endif' }
+    ],
+    commonMistakes: [
+      'Кладут определения обычных функций в .h и получают duplicate symbols.',
+      'Пишут макросы без скобок: #define SQUARE(x) x*x.',
+      'Забывают include guard и ловят повторные объявления.'
+    ],
+    importantNuances: [
+      '<stdio.h> ищется в системных путях, "file.h" — сначала рядом с текущим файлом.',
+      'В .h лучше держать интерфейс, а детали реализации прятать в .c.',
+      'Макрос вычисляет аргументы как текст: MAX(i++, j++) может увеличить переменную дважды.'
+    ],
+    checklist: [
+      'У каждого .h есть include guard или #pragma once.',
+      'В заголовке только нужный публичный API.',
+      'Макросы оборачивают параметры и весь результат в скобки.',
+      'Не использую макрос там, где подходит enum, const или static inline.'
+    ],
+    practiceHint: 'Разбей маленькую программу на main.c, utils.c и utils.h, затем собери их одной командой gcc.',
+    practiceCategory: 'functions'
+  },
+  {
+    id: 'file-io',
+    title: 'Файловый ввод/вывод',
+    shortTitle: 'Файлы',
+    simpleExplanation: 'Файлы в C открывают через fopen и получают FILE*. Потом читают/пишут через fprintf, fscanf, fgets, fread, fwrite. После работы файл нужно закрыть через fclose.',
+    howItWorks: 'fopen возвращает NULL при ошибке. Текстовый режим удобен для строк, бинарный — для байтов и структур с явным форматом. Чтение всегда нужно проверять по возвращаемому значению, а не по надежде, что файл правильный.',
+    syntax: [
+      'FILE *f = fopen("data.txt", "r");',
+      'if (f == NULL) { perror("data.txt"); return 1; }',
+      'char line[256];\nwhile (fgets(line, sizeof line, f)) { /* ... */ }',
+      'fprintf(f, "%d\\n", value);',
+      'fclose(f);'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Чтение файла построчно.', code: 'FILE *f = fopen("input.txt", "r");\nif (!f) return 1;\nchar line[128];\nwhile (fgets(line, sizeof line, f)) {\n  printf("%s", line);\n}\nfclose(f);' },
+      { title: 'Средний', note: 'Запись отчёта в текстовый файл.', code: 'FILE *out = fopen("report.txt", "w");\nif (!out) return 1;\nfor (int i = 0; i < n; i++)\n  fprintf(out, "%d\\n", values[i]);\nfclose(out);' },
+      { title: 'Реальный', note: 'Бинарное чтение с проверкой количества элементов.', code: 'int items[16];\nFILE *f = fopen("items.bin", "rb");\nif (!f) return 1;\nsize_t got = fread(items, sizeof items[0], 16, f);\nif (got < 16 && ferror(f)) perror("read");\nfclose(f);' }
+    ],
+    commonMistakes: [
+      'Не проверяют fopen и получают NULL dereference.',
+      'Используют fscanf без проверки результата и работают с мусором.',
+      'Забывают fclose — данные могут не сброситься на диск.'
+    ],
+    importantNuances: [
+      'fgets безопаснее gets: gets удалён из стандарта и не знает размер буфера.',
+      'feof становится true только после неудачной попытки чтения, поэтому цикл строят вокруг fgets/fread.',
+      'Для переносимого бинарного формата не записывай struct как есть: padding и endian могут отличаться.'
+    ],
+    checklist: [
+      'Проверяю FILE* после fopen.',
+      'Проверяю результат чтения и записи.',
+      'Закрываю файл на всех ветках выхода.',
+      'Выбираю текстовый или бинарный режим осознанно.'
+    ],
+    practiceHint: 'Напиши программу, которая читает числа из файла, считает сумму и пишет результат в другой файл.',
+    practiceCategory: 'strings'
+  },
+  {
+    id: 'enums-unions-flags',
+    title: 'enum, union и битовые флаги',
+    shortTitle: 'enum/flags',
+    simpleExplanation: 'enum даёт имена целым константам. union хранит разные поля в одной и той же памяти. Битовые флаги упаковывают несколько boolean-состояний в одно целое число.',
+    howItWorks: 'enum обычно совместим с int. В union активным считается только то поле, которое ты последним записал и правильно интерпретируешь. Флаги включают через |, проверяют через &, выключают через & ~.',
+    syntax: [
+      'typedef enum { RED, GREEN, BLUE } Color;',
+      'typedef union { int i; float f; unsigned char bytes[4]; } Value;',
+      'enum { FLAG_READ = 1 << 0, FLAG_WRITE = 1 << 1 };',
+      'flags |= FLAG_READ;      // включить',
+      'if (flags & FLAG_WRITE) { /* есть право */ }',
+      'flags &= ~FLAG_READ;     // выключить'
+    ],
+    examples: [
+      { title: 'Простой', note: 'enum делает switch читаемым.', code: 'typedef enum { STATE_IDLE, STATE_RUN, STATE_ERROR } State;\nswitch (state) {\ncase STATE_IDLE: break;\ncase STATE_RUN: run(); break;\ncase STATE_ERROR: reset(); break;\n}' },
+      { title: 'Средний', note: 'Флаги прав доступа.', code: 'enum { CAN_READ = 1 << 0, CAN_WRITE = 1 << 1, CAN_EXEC = 1 << 2 };\nunsigned perms = CAN_READ | CAN_WRITE;\nif (perms & CAN_WRITE) save();' },
+      { title: 'Реальный', note: 'Tagged union: тип рядом с данными.', code: 'typedef enum { VAL_INT, VAL_FLOAT } Kind;\ntypedef struct {\n  Kind kind;\n  union { int i; float f; } data;\n} Value;\nif (v.kind == VAL_INT) printf("%d\\n", v.data.i);' }
+    ],
+    commonMistakes: [
+      'Читают не то поле union, которое записали, и получают непереносимое поведение.',
+      'Сравнивают флаги через == вместо проверки bits & FLAG.',
+      'Задают флаги как 0, 1, 2, 3 вместо степеней двойки.'
+    ],
+    importantNuances: [
+      'Для набора флагов используй unsigned типы: сдвиги и маски предсказуемее.',
+      'enum хорош для состояний, но компилятор не всегда запретит чужое int-значение.',
+      'Tagged union безопаснее голого union: сначала проверяешь kind, потом читаешь нужное поле.'
+    ],
+    checklist: [
+      'Использую enum для именованных состояний.',
+      'Для флагов задаю значения через 1 << n.',
+      'Проверяю флаг через (flags & FLAG) != 0.',
+      'У union храню отдельный tag, если данные приходят извне или живут долго.'
+    ],
+    practiceHint: 'Сделай набор прав доступа через битовые флаги: read/write/exec, включение, выключение и проверка.',
+    practiceCategory: 'objects'
+  },
+  {
+    id: 'compilation-ub',
+    title: 'Компиляция и undefined behavior',
+    shortTitle: 'Компиляция/UB',
+    simpleExplanation: 'C сначала препроцессится, потом компилируется в объектные файлы, потом линкуется в программу. Undefined behavior — ситуация, где стандарт C не обещает вообще ничего: программа может работать, падать или тихо ломаться.',
+    howItWorks: 'Компилятор оптимизирует код, предполагая что UB не происходит. Поэтому выход за массив, signed overflow, use-after-free и неверные printf-форматы могут превращаться в странные баги. Предупреждения и sanitizers ловят часть проблем рано.',
+    syntax: [
+      'gcc -std=c11 -Wall -Wextra -Wpedantic main.c util.c -o app',
+      'gcc -c util.c -o util.o\ngcc main.o util.o -o app',
+      'gcc -g -fsanitize=address,undefined main.c -o app',
+      './app',
+      'valgrind ./app   // если доступен'
+    ],
+    examples: [
+      { title: 'Простой', note: 'Сборка из двух .c файлов.', code: 'gcc -Wall -Wextra main.c math_utils.c -o trainer\n./trainer' },
+      { title: 'Средний', note: 'Типичный UB: выход за границы.', code: 'int a[3] = {1, 2, 3};\nprintf("%d\\n", a[3]); // UB: индексы только 0..2' },
+      { title: 'Реальный', note: 'Sanitizer быстро показывает проблему памяти.', code: 'gcc -g -fsanitize=address,undefined main.c -o app\n./app\n// отчёт укажет место use-after-free или overflow' }
+    ],
+    commonMistakes: [
+      'Игнорируют warnings, хотя компилятор уже показывает реальный баг.',
+      'Думают "у меня работает" после UB — на другой оптимизации может сломаться.',
+      'Путают compile error, link error и runtime error.'
+    ],
+    importantNuances: [
+      '-Wall -Wextra не включают вообще все предупреждения, но это хороший минимум.',
+      'Link error часто значит: есть прототип, но нет реализации или объектный файл не передали линкеру.',
+      'UB отличается от unspecified behavior: при UB компилятор ничем не ограничен.'
+    ],
+    checklist: [
+      'Собираю с -Wall -Wextra и читаю предупреждения.',
+      'Понимаю разницу между препроцессингом, компиляцией и линковкой.',
+      'Запускаю sanitizer для задач с памятью и указателями.',
+      'Не оправдываю UB тем, что пример один раз сработал.'
+    ],
+    practiceHint: 'Собери маленький проект из двух файлов, специально поймай warning, link error и sanitizer-ошибку.',
+    practiceCategory: 'functions'
   }
 ];
 
