@@ -55,7 +55,7 @@ await app.register(jwt, { secret: env.JWT_SECRET });
 
 // ── Global error handler ──────────────────────────────────────────────────────
 
-app.setErrorHandler((error, _request, reply) => {
+app.setErrorHandler((error: Error & { validation?: unknown; statusCode?: number }, _request, reply) => {
   if (error instanceof AppError) {
     return reply.code(error.statusCode).send({
       error:   error.name,
@@ -66,7 +66,7 @@ app.setErrorHandler((error, _request, reply) => {
   if (error.validation) {
     return reply.code(422).send({ error: 'Validation failed', code: 'VALIDATION_ERROR', issues: error.validation });
   }
-  if ((error as any).message === 'STRIPE_NOT_CONFIGURED') {
+  if (error.message === 'STRIPE_NOT_CONFIGURED') {
     return reply.code(503).send({ error: 'Billing not configured', code: 'STRIPE_NOT_CONFIGURED' });
   }
 

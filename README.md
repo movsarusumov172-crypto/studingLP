@@ -405,6 +405,25 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
 
+### 2026-05-13 — Codex — project diagnostics note
+
+**Request:** записать итог диагностики проекта в отдельный `README3`.
+
+**Changed files:**
+- `README.md`
+- `README3.md`
+
+**What changed:**
+- Создан `README3.md` с кратким отчетом по диагностике проекта, пройденным проверкам, найденным рискам и рекомендуемым следующим шагам.
+- В корневой `README.md` добавлена координационная запись для Codex и Claude Code.
+
+**Verification:**
+- `git diff --check -- README.md README3.md` — passed.
+
+**Coordination notes:**
+- Это документационное изменение: код, инсталлер и GitHub Release не обновлялись.
+- Главный следующий технический фокус из отчета: backend dependency/security upgrade и перенос refresh token из renderer `localStorage`.
+
 ### 2026-05-12 — Codex — topic-aware practice for all theory
 
 **Request:** добавить практические задания под все новые темы теории и ускорить работу через трёх параллельных агентов.

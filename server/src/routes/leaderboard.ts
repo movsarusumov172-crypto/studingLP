@@ -3,6 +3,7 @@ import { desc, eq, gt, and, count } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { progress, users } from '../db/schema.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { requirePlan } from '../middleware/requirePlan.js';
 import { KERNEL_IDS } from '../types/index.js';
 
 const TOP_N = 50;
@@ -21,7 +22,7 @@ export async function leaderboardRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { kernelId: string } }>(
     '/leaderboard/:kernelId',
-    { preHandler: authenticate },
+    { preHandler: [authenticate, requirePlan('pro')] },
     async (request, reply) => {
       const { kernelId } = request.params;
 
