@@ -2931,6 +2931,223 @@ details.panel[open] > summary {
   border: 1px solid rgba(214, 178, 90, 0.28);
 }
 
+/* ── Onboarding: goal selection ───────────────────────────────────────────── */
+
+.onboarding-goals {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.onboarding-goal-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.onboarding-goal-btn:hover {
+  border-color: rgba(214, 178, 90, 0.4);
+  background: rgba(214, 178, 90, 0.06);
+}
+
+.onboarding-goal-icon {
+  font-size: 1.4rem;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.onboarding-goal-btn strong {
+  display: block;
+  font-size: 0.96rem;
+  margin-bottom: 3px;
+}
+
+.onboarding-goal-btn span {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* ── Return after break ───────────────────────────────────────────────────── */
+
+.return-card {
+  width: min(92vw, 420px);
+  gap: 16px;
+}
+
+.return-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.return-emoji {
+  font-size: 2.4rem;
+  flex: 0 0 auto;
+}
+
+.return-header h2 {
+  margin: 0 0 3px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.return-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.return-stat {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: center;
+}
+
+.return-stat-value {
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-family: var(--code);
+  color: var(--accent);
+}
+
+.return-stat-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.return-message {
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: rgba(214, 178, 90, 0.05);
+  border: 1px solid rgba(214, 178, 90, 0.16);
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.return-message p { margin: 0; }
+
+/* ── AI Hint panel ────────────────────────────────────────────────────────── */
+
+.ai-hint-panel {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-hint-btn {
+  width: 100%;
+  font-size: 0.88rem;
+  padding: 9px 14px;
+  justify-content: center;
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #c4b5fd;
+}
+
+.ai-hint-btn:hover:not(:disabled) {
+  border-color: rgba(139, 92, 246, 0.55);
+  background: rgba(139, 92, 246, 0.08);
+  color: #ddd6fe;
+}
+
+.ai-hint-result {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.06);
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-hint-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-family: var(--code);
+}
+
+/* ── Progress report modal ────────────────────────────────────────────────── */
+
+.progress-report-card {
+  width: min(92vw, 540px);
+  max-height: min(85vh, 720px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.progress-report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.progress-report-section {
+  display: grid;
+  gap: 8px;
+}
+
+.progress-report-section-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.progress-category-bar {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+}
+
+.progress-bar-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.progress-bar-count {
+  color: var(--muted);
+  font-family: var(--code);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

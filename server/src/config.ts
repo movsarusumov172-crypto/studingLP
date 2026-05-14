@@ -10,6 +10,8 @@ const schema = z.object({
   JWT_SECRET:            z.string().min(32, 'JWT_SECRET must be at least 32 chars'),
   JWT_REFRESH_SECRET:    z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 chars'),
   CORS_ORIGIN:           z.string().default('*'),
+  // Anthropic — optional, AI hints skipped without this
+  ANTHROPIC_API_KEY:     z.string().optional(),
   // Email via Resend — optional, emails skipped without this
   RESEND_API_KEY:        z.string().optional(),
   EMAIL_FROM:            z.string().default('JS Infinite Trainer <onboarding@resend.dev>'),

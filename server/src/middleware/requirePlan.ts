@@ -11,13 +11,14 @@ export function requirePlan(required: Plan) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const userPlan = request.user?.plan ?? 'free';
     if ((PLAN_RANK[userPlan] ?? 0) < PLAN_RANK[required]) {
-      reply.code(403).send({
+      // In Fastify v5, we must return after send() to ensure hook chain stops
+      return reply.code(403).send({
         error:    'Upgrade required',
         code:     'UPGRADE_REQUIRED',
         required,
         current:  userPlan,
         message:  `This feature requires the ${required} plan.`,
-      });
+      }) as unknown as void;
     }
   };
 }

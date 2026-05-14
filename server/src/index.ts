@@ -10,6 +10,7 @@ import { progressRoutes } from './routes/progress.js';
 import { billingRoutes } from './routes/billing.js';
 import { leaderboardRoutes } from './routes/leaderboard.js';
 import { customTasksRoutes } from './routes/custom-tasks.js';
+import { aiRoutes } from './routes/ai.js';
 import { AppError } from './services/auth.service.js';
 
 // ── Sentry ────────────────────────────────────────────────────────────────────
@@ -34,6 +35,13 @@ const app = Fastify({
 });
 
 // ── Plugins ───────────────────────────────────────────────────────────────────
+
+// Allow DELETE/GET requests without Content-Type (Fastify v5 is strict)
+app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+  if (!body) { done(null, {}); return; }
+  try { done(null, JSON.parse(body as string)); }
+  catch (e: any) { done(e); }
+});
 
 await app.register(helmet, { global: true });
 await app.register(rateLimit, {
@@ -90,6 +98,7 @@ await app.register(progressRoutes);
 await app.register(billingRoutes);
 await app.register(leaderboardRoutes);
 await app.register(customTasksRoutes);
+await app.register(aiRoutes);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 

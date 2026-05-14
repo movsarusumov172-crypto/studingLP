@@ -64,6 +64,7 @@
               <details class="overflow-menu">
                 <summary class="button button-secondary more-menu-trigger" aria-label="Дополнительные действия профиля" title="Дополнительные действия">⋯</summary>
                 <div class="overflow-menu-panel">
+                  <button id="progressReportOpenBtn" class="button button-secondary overflow-menu-item" type="button">📊 Отчёт прогресса</button>
                   <button id="exportProgressBtn" class="button button-secondary overflow-menu-item" type="button">Экспорт прогресса</button>
                   <button id="importProgressBtn" class="button button-secondary overflow-menu-item" type="button">Импорт прогресса</button>
                 </div>
@@ -319,6 +320,10 @@
             </div>
             <div id="testResults" class="test-results"></div>
             <div id="learningFeedback" class="learning-feedback"></div>
+            <div id="aiHintPanel" class="ai-hint-panel hidden">
+              <button id="aiHintBtn" class="button button-secondary ai-hint-btn" type="button">✨ Объяснить с ИИ</button>
+              <div id="aiHintResult" class="ai-hint-result hidden"></div>
+            </div>
           </article>
 
           <article class="panel output-panel">
@@ -343,55 +348,87 @@
 
     <div id="feedbackLayer" class="feedback-layer" aria-live="polite" aria-atomic="true"></div>
 
-    <div
-      id="onboardingOverlay"
-      class="onboarding-overlay hidden"
-      aria-hidden="true"
-    >
-      <div
-        class="onboarding-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="onboardingTitle"
-        aria-describedby="onboardingDescription"
-      >
-        <div class="onboarding-kicker">Первый запуск</div>
-        <h2 id="onboardingTitle">Начнём с одной простой задачи</h2>
-        <p id="onboardingDescription" class="onboarding-description">
-          Мы подберём лёгкий стартовый сценарий, чтобы ты сразу увидел цикл:
-          задача, проверка, XP и следующая задача. Без 12 настроек на старте.
-        </p>
+    <!-- Onboarding: goal selection + diagnostic entry -->
+    <div id="onboardingOverlay" class="onboarding-overlay hidden" aria-hidden="true">
+      <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
 
-        <div class="onboarding-track" id="onboardingTrack">JS · Лёгкий старт</div>
-
-        <div class="onboarding-steps">
-          <article class="onboarding-step">
-            <span>1</span>
-            <div>
-              <strong>Старт</strong>
-              <p>Запускаем простой сценарий под твой текущий язык.</p>
-            </div>
-          </article>
-          <article class="onboarding-step">
-            <span>2</span>
-            <div>
-              <strong>Решение</strong>
-              <p>Пишешь код и жмёшь Ctrl+Enter или кнопку проверки.</p>
-            </div>
-          </article>
-          <article class="onboarding-step">
-            <span>3</span>
-            <div>
-              <strong>Прогресс</strong>
-              <p>Получаешь XP, серию и мгновенно переходишь к следующей задаче.</p>
-            </div>
-          </article>
+        <!-- Screen A: Goal selection -->
+        <div id="onboardingScreenGoal">
+          <div class="onboarding-kicker">Первый запуск</div>
+          <h2 id="onboardingTitle">Зачем ты здесь?</h2>
+          <p class="onboarding-description">Выбери цель — подберём задачи и темп.</p>
+          <div class="onboarding-goals">
+            <button class="onboarding-goal-btn" data-goal="junior" type="button">
+              <span class="onboarding-goal-icon">🎯</span>
+              <strong>Готовлюсь к собеседованию</strong>
+              <span>Алгоритмы, паттерны, типичные задачи</span>
+            </button>
+            <button class="onboarding-goal-btn" data-goal="practice" type="button">
+              <span class="onboarding-goal-icon">💪</span>
+              <strong>Хочу практиковаться каждый день</strong>
+              <span>Регулярный ритм, слабые темы, рост</span>
+            </button>
+            <button class="onboarding-goal-btn" data-goal="explore" type="button">
+              <span class="onboarding-goal-icon">🔍</span>
+              <strong>Просто смотрю что тут есть</strong>
+              <span>Свободная практика без плана</span>
+            </button>
+          </div>
+          <div class="onboarding-track" id="onboardingTrack">JS · Лёгкий старт</div>
+          <button id="skipOnboardingBtn" class="auth-skip" type="button" style="margin-top:8px">Пропустить →</button>
         </div>
 
-        <div class="onboarding-actions">
-          <button id="startOnboardingBtn" class="button button-primary" type="button">Начать 5-минутную сессию</button>
-          <button id="skipOnboardingBtn" class="button button-secondary" type="button">Показать все настройки</button>
+        <!-- Screen B: Diagnostic intro (shown after goal pick) -->
+        <div id="onboardingScreenDiag" class="hidden">
+          <div class="onboarding-kicker">Диагностика · 5 задач · ~5 мин</div>
+          <h2>Проверим базовый уровень</h2>
+          <p class="onboarding-description">Быстрые задачи по ключевым темам. Не нужно знать всё — просто попробуй. По результатам составим твой первый план.</p>
+          <div class="onboarding-steps">
+            <article class="onboarding-step"><span>1</span><div><strong>5 коротких задач</strong><p>По одной на каждую ключевую тему.</p></div></article>
+            <article class="onboarding-step"><span>2</span><div><strong>Карта навыков</strong><p>Видишь что сильно, что слабо.</p></div></article>
+            <article class="onboarding-step"><span>3</span><div><strong>Личный план</strong><p>Первая сессия уже подобрана под тебя.</p></div></article>
+          </div>
+          <div class="onboarding-actions">
+            <button id="startDiagnosticBtn" class="button button-primary" type="button">Начать диагностику</button>
+            <button id="skipDiagnosticBtn" class="button button-secondary" type="button">Сразу к практике</button>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Return after break overlay -->
+    <div id="returnOverlay" class="auth-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="auth-card return-card">
+        <div class="return-header">
+          <div class="return-emoji">👋</div>
+          <div>
+            <h2 id="returnTitle">С возвращением!</h2>
+            <p id="returnSubtitle" class="muted"></p>
+          </div>
+        </div>
+        <div id="returnStats" class="return-stats"></div>
+        <div class="return-message">
+          <p>Без давления — начнём с лёгкой разминки и вспомним знакомые темы.</p>
+        </div>
+        <div class="account-actions" style="gap:8px">
+          <button id="returnStartBtn" class="button button-primary account-action-btn" type="button">🔥 Начать разминку</button>
+          <button id="returnSkipBtn" class="auth-skip" type="button">Продолжить как обычно →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress report modal -->
+    <div id="progressReportOverlay" class="auth-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="auth-card progress-report-card">
+        <div class="session-summary-header">
+          <div>
+            <div class="eyebrow">Твой прогресс</div>
+            <h2 id="progressReportTitle">Отчёт</h2>
+          </div>
+          <button id="progressReportCloseBtn" class="auth-skip" type="button" style="font-size:1.2rem">✕</button>
+        </div>
+        <div id="progressReportBody" class="progress-report-body"></div>
+        <button id="progressReportExportBtn" class="button button-secondary account-action-btn" type="button" style="margin-top:4px">⬇ Экспорт HTML</button>
       </div>
     </div>
 

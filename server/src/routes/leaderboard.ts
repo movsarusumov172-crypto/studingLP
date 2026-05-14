@@ -22,9 +22,19 @@ export async function leaderboardRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { kernelId: string } }>(
     '/leaderboard/:kernelId',
-    { preHandler: [authenticate, requirePlan('pro')] },
+    { preHandler: authenticate },
     async (request, reply) => {
       const { kernelId } = request.params;
+
+      // Server-side Pro enforcement (inline for reliability)
+      const PLAN_RANK: Record<string, number> = { free: 0, pro: 1, team: 2 };
+      if ((PLAN_RANK[request.user?.plan ?? 'free'] ?? 0) < PLAN_RANK['pro']) {
+        return reply.code(403).send({
+          error: 'Upgrade required', code: 'UPGRADE_REQUIRED',
+          required: 'pro', current: request.user?.plan ?? 'free',
+          message: 'Leaderboard requires the Pro plan.',
+        });
+      }
 
       if (!KERNEL_IDS.includes(kernelId as never)) {
         return reply.code(400).send({ error: 'Invalid kernelId', code: 'INVALID_KERNEL' });

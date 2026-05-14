@@ -248,6 +248,8 @@ const state = {
   streakFxTimer: null,
   generating: false,
   taskStartedAt: null,
+  diagnosticGoal: null,
+  diagnosticActive: false,
   session: {
     active:    false,
     plan:      [],    // [{label, icon, tip, categories, difficulties, mode}]
@@ -415,10 +417,29 @@ const els = {
   theoryCloseBtn: document.getElementById('theoryCloseBtn'),
   theoryNav: document.getElementById('theoryNav'),
   theoryContent: document.getElementById('theoryContent'),
-  onboardingOverlay: document.getElementById('onboardingOverlay'),
-  onboardingTrack: document.getElementById('onboardingTrack'),
-  startOnboardingBtn: document.getElementById('startOnboardingBtn'),
-  skipOnboardingBtn: document.getElementById('skipOnboardingBtn')
+  onboardingOverlay:      document.getElementById('onboardingOverlay'),
+  onboardingTrack:        document.getElementById('onboardingTrack'),
+  onboardingScreenGoal:   document.getElementById('onboardingScreenGoal'),
+  onboardingScreenDiag:   document.getElementById('onboardingScreenDiag'),
+  startOnboardingBtn:     document.getElementById('startOnboardingBtn'),
+  skipOnboardingBtn:      document.getElementById('skipOnboardingBtn'),
+  startDiagnosticBtn:     document.getElementById('startDiagnosticBtn'),
+  skipDiagnosticBtn:      document.getElementById('skipDiagnosticBtn'),
+  returnOverlay:          document.getElementById('returnOverlay'),
+  returnTitle:            document.getElementById('returnTitle'),
+  returnSubtitle:         document.getElementById('returnSubtitle'),
+  returnStats:            document.getElementById('returnStats'),
+  returnStartBtn:         document.getElementById('returnStartBtn'),
+  returnSkipBtn:          document.getElementById('returnSkipBtn'),
+  progressReportOverlay:  document.getElementById('progressReportOverlay'),
+  progressReportOpenBtn:  document.getElementById('progressReportOpenBtn'),
+  progressReportCloseBtn: document.getElementById('progressReportCloseBtn'),
+  progressReportBody:     document.getElementById('progressReportBody'),
+  progressReportTitle:    document.getElementById('progressReportTitle'),
+  progressReportExportBtn:document.getElementById('progressReportExportBtn'),
+  aiHintPanel:            document.getElementById('aiHintPanel'),
+  aiHintBtn:              document.getElementById('aiHintBtn'),
+  aiHintResult:           document.getElementById('aiHintResult')
 };
 
 function applyText(node, text) {
@@ -2459,6 +2480,7 @@ async function generateTask(mode = 'practice', sessionOverrides = {}) {
   renderHintPanel();
   renderSolutionPanel();
   renderResults(null);
+  hideAiHintPanel();
   state.taskStartedAt = Date.now();
   if (els.shareSeedBtn) els.shareSeedBtn.disabled = false;
   const practiceFocusLabel = mode === 'practice' ? getPracticeFocusLabel() : '';
@@ -2519,6 +2541,7 @@ async function runCurrentTask() {
       setRunStatus(report.error ? `Ошибка: ${report.error}` : 'Есть ошибки в тестах', 'danger');
       state.failuresOnCurrentTask += 1;
       showRunFeedback({ passed: false, error: report.error || '' });
+      showAiHintPanel();
       if (state.settings.autoHint && state.failuresOnCurrentTask >= 2) {
         showNextHint(true);
       }
@@ -3181,6 +3204,11 @@ function showSessionSummary() {
   state.session.active = false;
   hideSessionBar();
 
+  // If this was a diagnostic session, show diagnostic results instead
+  if (state.diagnosticActive) {
+    showDiagnosticResultInSummary();
+  }
+
   const { results, startedAt } = state.session;
   const totalMs   = Date.now() - (startedAt ?? Date.now());
   const solvedN   = results.filter((r) => r.solved).length;
@@ -3241,6 +3269,324 @@ function showSessionSummary() {
 function hideSessionSummary() {
   els.sessionSummaryOverlay?.classList.add('hidden');
   els.sessionSummaryOverlay?.setAttribute('aria-hidden', 'true');
+}
+
+// ── Onboarding diagnostic ─────────────────────────────────────────────────────
+
+const DIAGNOSTIC_PLAN = [
+  { label: 'Массивы',    categories: ['arrays'],     difficulties: ['easy'] },
+  { label: 'Объекты',    categories: ['objects'],     difficulties: ['easy'] },
+  { label: 'Функции',    categories: ['functions'],   difficulties: ['easy'] },
+  { label: 'Замыкания',  categories: ['closures'],    difficulties: ['easy'] },
+  { label: 'Async',      categories: ['async'],       difficulties: ['easy'] },
+];
+
+function showOnboardingGoalScreen() {
+  if (!els.onboardingScreenGoal || !els.onboardingScreenDiag) return;
+  els.onboardingScreenGoal.classList.remove('hidden');
+  els.onboardingScreenDiag.classList.add('hidden');
+}
+
+function showOnboardingDiagScreen() {
+  if (!els.onboardingScreenGoal || !els.onboardingScreenDiag) return;
+  els.onboardingScreenGoal.classList.add('hidden');
+  els.onboardingScreenDiag.classList.remove('hidden');
+}
+
+async function startDiagnosticSession() {
+  completeOnboarding();
+  state.diagnosticActive = true;
+  const plan = DIAGNOSTIC_PLAN.map((step) => ({
+    ...step,
+    icon: '🔬',
+    tip: `Диагностическая задача: ${step.label}`,
+    mode: 'practice',
+  }));
+  state.session = {
+    active: true,
+    plan,
+    index: 0,
+    results: [],
+    startedAt: Date.now(),
+  };
+  renderSessionBar();
+  const first = plan[0];
+  await generateTask(first.mode, { categories: first.categories, difficulties: first.difficulties, randomMode: true });
+}
+
+function showDiagnosticResultInSummary() {
+  const { results } = state.session;
+  const skillResults = DIAGNOSTIC_PLAN.map((step, i) => {
+    const r = results[i];
+    return { label: step.label, category: step.categories[0], solved: r?.solved ?? false };
+  });
+  const strong = skillResults.filter((s) => s.solved).map((s) => s.label);
+  const weak   = skillResults.filter((s) => !s.solved).map((s) => s.label);
+
+  if (els.sessionSummaryTitle) {
+    els.sessionSummaryTitle.textContent = strong.length >= 3 ? 'Хороший уровень!' : 'Диагностика завершена!';
+  }
+  if (els.sessionSummaryStats) {
+    els.sessionSummaryStats.innerHTML = `
+      <div class="session-stat"><div class="session-stat-value">${strong.length}/5</div><div class="session-stat-label">Решено</div></div>
+      <div class="session-stat"><div class="session-stat-value">${weak.length}</div><div class="session-stat-label">Слабых тем</div></div>
+      <div class="session-stat"><div class="session-stat-value">📋</div><div class="session-stat-label">План готов</div></div>
+    `;
+  }
+  if (els.sessionSummaryList) {
+    els.sessionSummaryList.innerHTML = skillResults.map((s) => `
+      <div class="session-result-row ${s.solved ? 'solved' : 'skipped'}">
+        <span class="session-result-icon">${s.solved ? '✓' : '→'}</span>
+        <div class="session-result-info">
+          <div class="session-result-label">${escapeHtml(s.label)}</div>
+          <div class="session-result-meta">${s.solved ? 'Хорошо' : 'Нужна практика'}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  if (els.sessionSummaryNext) {
+    const focusTopic = weak[0] || strong[0] || 'Массивы';
+    els.sessionSummaryNext.innerHTML = `<strong>Первая сессия</strong>Фокус на «${escapeHtml(focusTopic)}» — именно туда пойдут ближайшие задачи.`;
+    // Apply weak-topic focus to settings
+    if (weak.length > 0) {
+      const weakCats = skillResults.filter((s) => !s.solved).map((s) => s.category).filter(Boolean);
+      if (weakCats.length > 0) {
+        state.settings.selectedCategories = weakCats;
+        state.settings.focusCategory = weakCats[0];
+        state.settings.randomMode = false;
+        saveSettings();
+        applySettingsToControls();
+      }
+    }
+  }
+  state.diagnosticActive = false;
+}
+
+// ── Return after break ────────────────────────────────────────────────────────
+
+const LAST_VISIT_KEY = 'jt.lastVisitAt';
+
+function checkReturnAfterBreak() {
+  const last = Number(localStorage.getItem(LAST_VISIT_KEY) || 0);
+  const now  = Date.now();
+  localStorage.setItem(LAST_VISIT_KEY, String(now));
+  if (!last || !state.onboarding.completed) return;
+
+  const daysSince = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+  if (daysSince < 7) return;
+
+  showReturnOverlay(daysSince);
+}
+
+function showReturnOverlay(days) {
+  if (!els.returnOverlay) return;
+  if (els.returnTitle)    els.returnTitle.textContent    = days >= 30 ? 'Давно не виделись!' : 'С возвращением!';
+  if (els.returnSubtitle) els.returnSubtitle.textContent = `Прошло ${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'} с последнего захода.`;
+
+  const solved = state.progress.solved || 0;
+  const streak = state.progress.bestStreak || 0;
+  if (els.returnStats) {
+    els.returnStats.innerHTML = `
+      <div class="return-stat"><div class="return-stat-value">${solved}</div><div class="return-stat-label">Решено всего</div></div>
+      <div class="return-stat"><div class="return-stat-value">${streak}</div><div class="return-stat-label">Лучшая серия</div></div>
+      <div class="return-stat"><div class="return-stat-value">${days}д</div><div class="return-stat-label">Перерыв</div></div>
+    `;
+  }
+  els.returnOverlay.classList.remove('hidden');
+  els.returnOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function hideReturnOverlay() {
+  els.returnOverlay?.classList.add('hidden');
+  els.returnOverlay?.setAttribute('aria-hidden', 'true');
+}
+
+async function startReturnSession() {
+  hideReturnOverlay();
+  // Easy warm-up: familiar categories (where user has most XP), easy difficulty
+  const data = buildSkillGraphData();
+  const topCategories = data.items
+    .filter((i) => i.count > 0)
+    .sort((a, b) => b.mastery - a.mastery)
+    .slice(0, 2)
+    .map((i) => i.category);
+  const cats = topCategories.length > 0 ? topCategories : CATEGORY_KEYS.slice(0, 2);
+  await generateTask('practice', { categories: cats, difficulties: ['easy'], randomMode: true });
+  setRunStatus(`Добро пожаловать назад! Начнём с того что ты уже знаешь.`, 'success');
+}
+
+// ── Progress Report ───────────────────────────────────────────────────────────
+
+function showProgressReport() {
+  if (!els.progressReportOverlay) return;
+
+  const summary  = api.getProgressSummary(state.progress);
+  const data     = buildSkillGraphData();
+  const achieved = api.buildAchievements(state.progress).filter((a) => a.unlocked);
+
+  if (els.progressReportTitle) {
+    els.progressReportTitle.textContent = `Уровень ${summary.level} · ${summary.xp} XP`;
+  }
+
+  if (els.progressReportBody) {
+    const statsHtml = `
+      <div class="progress-report-section">
+        <div class="progress-report-section-title">Общая статистика</div>
+        <div class="session-summary-stats">
+          <div class="session-stat"><div class="session-stat-value">${summary.solved}</div><div class="session-stat-label">Решено</div></div>
+          <div class="session-stat"><div class="session-stat-value">${summary.accuracy.toFixed(1)}%</div><div class="session-stat-label">Точность</div></div>
+          <div class="session-stat"><div class="session-stat-value">${summary.streak}</div><div class="session-stat-label">Серия</div></div>
+          <div class="session-stat"><div class="session-stat-value">${formatSolveTime(state.progress.fastestSolveMs)}</div><div class="session-stat-label">Рекорд</div></div>
+          <div class="session-stat"><div class="session-stat-value">${summary.bestStreak}</div><div class="session-stat-label">Лучшая серия</div></div>
+          <div class="session-stat"><div class="session-stat-value">${formatSolveTime(summary.solved > 0 ? (state.progress.totalSolveTimeMs / summary.solved) : 0)}</div><div class="session-stat-label">Среднее</div></div>
+        </div>
+      </div>`;
+
+    const catHtml = `
+      <div class="progress-report-section">
+        <div class="progress-report-section-title">По категориям</div>
+        ${data.items.map((item) => {
+          const pct = Math.min(100, item.mastery);
+          return `
+            <div class="progress-category-bar">
+              <span style="font-size:0.84rem">${escapeHtml(item.title)}</span>
+              <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;background:${escapeHtml(item.accent)}"></div></div>
+              <span class="progress-bar-count">${item.count} реш.</span>
+            </div>`;
+        }).join('')}
+      </div>`;
+
+    const achHtml = achieved.length > 0 ? `
+      <div class="progress-report-section">
+        <div class="progress-report-section-title">Достижения (${achieved.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${achieved.map((a) => `<span class="skill-node-pill">${escapeHtml(a.title)}</span>`).join('')}
+        </div>
+      </div>` : '';
+
+    els.progressReportBody.innerHTML = statsHtml + catHtml + achHtml;
+  }
+
+  els.progressReportOverlay.classList.remove('hidden');
+  els.progressReportOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function hideProgressReport() {
+  els.progressReportOverlay?.classList.add('hidden');
+  els.progressReportOverlay?.setAttribute('aria-hidden', 'true');
+}
+
+function exportProgressAsHTML() {
+  const summary = api.getProgressSummary(state.progress);
+  const data    = buildSkillGraphData();
+  const achieved = api.buildAchievements(state.progress).filter((a) => a.unlocked);
+  const date    = new Date().toLocaleDateString('ru-RU');
+
+  const html = `<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><title>Прогресс — JS Infinite Trainer</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#07090f;color:#eef2ff}
+h1{color:#d6b25a;margin-bottom:4px}
+.meta{color:#7a8ba6;font-size:.88rem;margin-bottom:28px}
+.section{margin-bottom:24px}
+.section-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:#7a8ba6;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);text-align:center;background:rgba(255,255,255,.03)}
+.stat-value{font-size:1.4rem;font-weight:900;color:#d6b25a;font-family:monospace}
+.stat-label{font-size:.72rem;color:#7a8ba6;text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+.bar-row{display:grid;grid-template-columns:110px 1fr 50px;align-items:center;gap:10px;margin-bottom:8px;font-size:.86rem}
+.bar-track{height:6px;border-radius:3px;background:rgba(255,255,255,.08)}
+.bar-fill{height:100%;border-radius:inherit;background:#d6b25a}
+.bar-count{color:#7a8ba6;font-family:monospace;font-size:.78rem;text-align:right}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:4px 10px;border-radius:999px;background:rgba(214,178,90,.12);border:1px solid rgba(214,178,90,.24);color:#d6b25a;font-size:.78rem}
+</style></head><body>
+<h1>JS Infinite Trainer</h1>
+<p class="meta">Отчёт прогресса · ${date} · Уровень ${summary.level} · ${summary.xp} XP</p>
+<div class="section">
+  <div class="section-title">Статистика</div>
+  <div class="stats">
+    <div class="stat"><div class="stat-value">${summary.solved}</div><div class="stat-label">Решено</div></div>
+    <div class="stat"><div class="stat-value">${summary.accuracy.toFixed(1)}%</div><div class="stat-label">Точность</div></div>
+    <div class="stat"><div class="stat-value">${summary.bestStreak}</div><div class="stat-label">Лучшая серия</div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-title">Навыки по категориям</div>
+  ${data.items.map((i) => `<div class="bar-row"><span>${i.title}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,i.mastery)}%;background:${i.accent}"></div></div><span class="bar-count">${i.count} реш.</span></div>`).join('')}
+</div>
+${achieved.length > 0 ? `<div class="section"><div class="section-title">Достижения</div><div class="chips">${achieved.map((a) => `<span class="chip">${a.title}</span>`).join('')}</div></div>` : ''}
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `jstrainer-progress-${new Date().toISOString().slice(0,10)}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ── AI Hints ──────────────────────────────────────────────────────────────────
+
+let _aiHintLoading = false;
+
+function showAiHintPanel() {
+  if (!els.aiHintPanel) return;
+  if (!isLoggedIn()) return; // silently skip if not logged in
+  els.aiHintPanel.classList.remove('hidden');
+  if (els.aiHintResult) els.aiHintResult.classList.add('hidden');
+}
+
+function hideAiHintPanel() {
+  els.aiHintPanel?.classList.add('hidden');
+}
+
+async function requestAiHint() {
+  if (_aiHintLoading || !state.currentTask || !state.currentReport) return;
+  _aiHintLoading = true;
+  if (els.aiHintBtn) els.aiHintBtn.disabled = true;
+
+  if (els.aiHintResult) {
+    els.aiHintResult.classList.remove('hidden');
+    els.aiHintResult.innerHTML = '<span class="ai-hint-loading">✨ Думаю...</span>';
+  }
+
+  try {
+    const { apiFetch } = await import('./api/client.mjs');
+    const failedTest = Array.isArray(state.currentReport?.tests)
+      ? state.currentReport.tests.find((t) => !t.passed)
+      : null;
+
+    const res = await apiFetch('/ai/hint', {
+      method: 'POST',
+      body:   JSON.stringify({
+        taskTitle:   state.currentTask.title,
+        taskPrompt:  state.currentTask.prompt,
+        signature:   state.currentTask.signature,
+        userCode:    getEditorValue(),
+        error:       state.currentReport.error || '',
+        failedInput: failedTest?.input,
+        failedExpected: failedTest?.expected,
+        failedActual:   failedTest?.actual,
+      }),
+    });
+
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.message || `HTTP ${res.status}`);
+    }
+
+    const { hint } = await res.json();
+    if (els.aiHintResult) els.aiHintResult.textContent = hint;
+  } catch (err) {
+    if (els.aiHintResult) els.aiHintResult.textContent = `Не удалось получить подсказку: ${err.message}`;
+  } finally {
+    _aiHintLoading = false;
+    if (els.aiHintBtn) els.aiHintBtn.disabled = false;
+  }
 }
 
 // ── Account modal ─────────────────────────────────────────────────────────────
@@ -3771,8 +4117,44 @@ function setupControlListeners() {
       hideAccountModal();
       hideUpgradeOverlay();
       hideLeaderboard();
+      hideReturnOverlay();
+      hideProgressReport();
     }
   });
+
+  // ── Onboarding goal selection ─────────────────────────────────────────────
+  els.onboardingScreenGoal?.querySelectorAll('.onboarding-goal-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.diagnosticGoal = btn.dataset.goal;
+      localStorage.setItem('jt.onboarding.goal', state.diagnosticGoal);
+      showOnboardingDiagScreen();
+    });
+  });
+
+  els.startDiagnosticBtn?.addEventListener('click', () => {
+    hideOnboardingOverlay();
+    void startDiagnosticSession();
+  });
+
+  els.skipDiagnosticBtn?.addEventListener('click', () => {
+    completeOnboarding();
+    generateTask('practice');
+  });
+
+  // ── Return after break ────────────────────────────────────────────────────
+  els.returnStartBtn?.addEventListener('click', () => void startReturnSession());
+  els.returnSkipBtn?.addEventListener('click', () => {
+    hideReturnOverlay();
+    generateTask('practice');
+  });
+
+  // ── Progress report ───────────────────────────────────────────────────────
+  els.progressReportOpenBtn?.addEventListener('click', showProgressReport);
+  els.progressReportCloseBtn?.addEventListener('click', hideProgressReport);
+  els.progressReportExportBtn?.addEventListener('click', exportProgressAsHTML);
+
+  // ── AI Hint ───────────────────────────────────────────────────────────────
+  els.aiHintBtn?.addEventListener('click', () => void requestAiHint());
 }
 
 async function init() {
@@ -3828,11 +4210,17 @@ async function init() {
   }).catch(() => {});
 
   if (shouldShowOnboarding()) {
+    showOnboardingGoalScreen();
     showOnboardingOverlay();
-    setRunStatus('Начни с быстрой тренировки в одно действие.', 'neutral');
+    setRunStatus('Выбери цель — подберём задачи под тебя.', 'neutral');
   } else {
     hideOnboardingOverlay();
-    generateTask('practice');
+    checkReturnAfterBreak();
+    // If return overlay is visible, user will trigger task gen via button
+    const returnVisible = els.returnOverlay && !els.returnOverlay.classList.contains('hidden');
+    if (!returnVisible) {
+      generateTask('practice');
+    }
   }
 }
 
