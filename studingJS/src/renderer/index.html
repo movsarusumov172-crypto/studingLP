@@ -64,6 +64,8 @@
               <details class="overflow-menu">
                 <summary class="button button-secondary more-menu-trigger" aria-label="Дополнительные действия профиля" title="Дополнительные действия">⋯</summary>
                 <div class="overflow-menu-panel">
+                  <button id="challengesOpenBtn" class="button button-secondary overflow-menu-item" type="button">🏆 Челленджи</button>
+                  <button id="goalsOpenBtn" class="button button-secondary overflow-menu-item" type="button">🎯 Моя цель</button>
                   <button id="progressReportOpenBtn" class="button button-secondary overflow-menu-item" type="button">📊 Отчёт прогресса</button>
                   <button id="exportProgressBtn" class="button button-secondary overflow-menu-item" type="button">Экспорт прогресса</button>
                   <button id="importProgressBtn" class="button button-secondary overflow-menu-item" type="button">Импорт прогресса</button>
@@ -393,6 +395,48 @@
             <button id="skipDiagnosticBtn" class="button button-secondary" type="button">Сразу к практике</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- AI breakdown panel (shown after successful solve) -->
+    <div id="aiBreakdownPanel" class="ai-breakdown-panel hidden">
+      <div class="ai-breakdown-header">
+        <span class="ai-breakdown-icon">✨</span>
+        <span class="ai-breakdown-title">Что ты применил</span>
+        <button id="aiBreakdownCloseBtn" class="auth-skip ai-breakdown-close" type="button">✕</button>
+      </div>
+      <div id="aiBreakdownBody" class="ai-breakdown-body"></div>
+    </div>
+
+    <!-- Challenges overlay -->
+    <div id="challengesOverlay" class="auth-overlay hidden" role="dialog" aria-modal="true">
+      <div class="auth-card challenges-card">
+        <div class="session-summary-header">
+          <div>
+            <div class="eyebrow">Учебные челленджи</div>
+            <h2>Выбери марафон</h2>
+          </div>
+          <button id="challengesCloseBtn" class="auth-skip" type="button" style="font-size:1.2rem">✕</button>
+        </div>
+        <div id="activeChallengeBar" class="active-challenge-bar hidden"></div>
+        <div id="challengesList" class="challenges-list"></div>
+      </div>
+    </div>
+
+    <!-- Personal goals overlay -->
+    <div id="goalsOverlay" class="auth-overlay hidden" role="dialog" aria-modal="true">
+      <div class="auth-card goals-card">
+        <div class="session-summary-header">
+          <div>
+            <div class="eyebrow">Персональная цель</div>
+            <h2 id="goalsTitle">Выбери свой темп</h2>
+          </div>
+          <button id="goalsCloseBtn" class="auth-skip" type="button" style="font-size:1.2rem">✕</button>
+        </div>
+        <p class="muted" style="font-size:0.88rem;margin:0 0 4px">Без давления — только то что тебе подходит.</p>
+        <div id="goalsList" class="goals-list"></div>
+        <div id="activeGoalStatus" class="active-goal-status hidden"></div>
+        <button id="goalsClearBtn" class="auth-skip hidden" type="button" style="margin-top:4px">Сбросить цель</button>
       </div>
     </div>
 

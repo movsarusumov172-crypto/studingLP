@@ -3148,6 +3148,285 @@ details.panel[open] > summary {
   white-space: nowrap;
 }
 
+/* ── AI Breakdown panel ───────────────────────────────────────────────────── */
+
+.ai-breakdown-panel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: rgba(139, 92, 246, 0.06);
+  display: grid;
+  gap: 10px;
+}
+
+.ai-breakdown-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-breakdown-icon { font-size: 1rem; }
+
+.ai-breakdown-title {
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #c4b5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ai-breakdown-close {
+  font-size: 0.9rem;
+  padding: 2px 6px;
+}
+
+.ai-breakdown-body {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-breakdown-item {
+  display: grid;
+  gap: 3px;
+}
+
+.ai-breakdown-item-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #a78bfa;
+}
+
+.ai-breakdown-item-text {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* ── Challenges overlay ───────────────────────────────────────────────────── */
+
+.challenges-card {
+  width: min(92vw, 520px);
+  max-height: min(80vh, 680px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.active-challenge-bar {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(214, 178, 90, 0.07);
+  border: 1px solid rgba(214, 178, 90, 0.25);
+  display: grid;
+  gap: 8px;
+}
+
+.active-challenge-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.active-challenge-name {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.active-challenge-days {
+  font-family: var(--code);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.active-challenge-dots {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.challenge-day-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  place-items: center;
+  font-size: 0.6rem;
+}
+
+.challenge-day-dot.done {
+  background: rgba(46, 213, 115, 0.2);
+  border-color: rgba(46, 213, 115, 0.4);
+  color: var(--accent-3);
+}
+
+.challenge-day-dot.today {
+  background: rgba(214, 178, 90, 0.18);
+  border-color: rgba(214, 178, 90, 0.5);
+  color: var(--accent);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.challenges-list {
+  display: grid;
+  gap: 10px;
+}
+
+.challenge-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.challenge-card:hover {
+  border-color: rgba(214, 178, 90, 0.35);
+  background: rgba(214, 178, 90, 0.05);
+}
+
+.challenge-card.active {
+  border-color: rgba(214, 178, 90, 0.4);
+  border-left: 3px solid var(--accent);
+  background: rgba(214, 178, 90, 0.06);
+}
+
+.challenge-card.completed {
+  border-color: rgba(46, 213, 115, 0.3);
+  border-left: 3px solid var(--accent-3);
+  background: rgba(46, 213, 115, 0.04);
+  opacity: 0.75;
+}
+
+.challenge-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.challenge-emoji { font-size: 1.3rem; }
+
+.challenge-card-info { flex: 1; }
+
+.challenge-card-name {
+  font-weight: 700;
+  font-size: 0.94rem;
+  margin-bottom: 2px;
+}
+
+.challenge-card-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.challenge-badge {
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-family: var(--code);
+  white-space: nowrap;
+}
+
+.challenge-badge-days {
+  background: rgba(214, 178, 90, 0.1);
+  border: 1px solid rgba(214, 178, 90, 0.24);
+  color: var(--accent);
+}
+
+.challenge-badge-done {
+  background: rgba(46, 213, 115, 0.1);
+  border: 1px solid rgba(46, 213, 115, 0.24);
+  color: var(--accent-3);
+}
+
+.challenge-start-btn {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 0.86rem;
+  padding: 8px;
+  justify-content: center;
+}
+
+/* ── Personal goals overlay ───────────────────────────────────────────────── */
+
+.goals-card {
+  width: min(92vw, 440px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goals-list {
+  display: grid;
+  gap: 8px;
+}
+
+.goal-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+
+.goal-option:hover {
+  border-color: rgba(214, 178, 90, 0.35);
+  background: rgba(214, 178, 90, 0.05);
+}
+
+.goal-option.active {
+  border-color: rgba(214, 178, 90, 0.45);
+  border-left: 3px solid var(--accent);
+  background: rgba(214, 178, 90, 0.07);
+}
+
+.goal-option-icon { font-size: 1.3rem; flex: 0 0 auto; }
+
+.goal-option-info { flex: 1; }
+
+.goal-option-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+
+.goal-option-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.active-goal-status {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(46, 213, 115, 0.25);
+  background: rgba(46, 213, 115, 0.05);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.active-goal-status strong {
+  color: var(--accent-3);
+  display: block;
+  margin-bottom: 4px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

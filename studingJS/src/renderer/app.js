@@ -13,6 +13,7 @@ import {
 import { restoreSession, login, register, logout, getStoredEmail, isLoggedIn } from './api/auth.mjs';
 import { syncProgress, fetchAndMergeProgress } from './api/progress.mjs';
 import { startCheckout, openBillingPortal, getBillingStatus } from './api/billing.mjs';
+import { apiFetch } from './api/client.mjs';
 import { syncCustomTask, deleteCustomTaskFromServer, fetchAndMergeCustomTasks } from './api/customTasks.mjs';
 import { fetchLeaderboard } from './api/leaderboard.mjs';
 
@@ -439,7 +440,22 @@ const els = {
   progressReportExportBtn:document.getElementById('progressReportExportBtn'),
   aiHintPanel:            document.getElementById('aiHintPanel'),
   aiHintBtn:              document.getElementById('aiHintBtn'),
-  aiHintResult:           document.getElementById('aiHintResult')
+  aiHintResult:           document.getElementById('aiHintResult'),
+  aiBreakdownPanel:       document.getElementById('aiBreakdownPanel'),
+  aiBreakdownBody:        document.getElementById('aiBreakdownBody'),
+  aiBreakdownCloseBtn:    document.getElementById('aiBreakdownCloseBtn'),
+  challengesOverlay:      document.getElementById('challengesOverlay'),
+  challengesOpenBtn:      document.getElementById('challengesOpenBtn'),
+  challengesCloseBtn:     document.getElementById('challengesCloseBtn'),
+  activeChallengeBar:     document.getElementById('activeChallengeBar'),
+  challengesList:         document.getElementById('challengesList'),
+  goalsOverlay:           document.getElementById('goalsOverlay'),
+  goalsOpenBtn:           document.getElementById('goalsOpenBtn'),
+  goalsCloseBtn:          document.getElementById('goalsCloseBtn'),
+  goalsTitle:             document.getElementById('goalsTitle'),
+  goalsList:              document.getElementById('goalsList'),
+  activeGoalStatus:       document.getElementById('activeGoalStatus'),
+  goalsClearBtn:          document.getElementById('goalsClearBtn')
 };
 
 function applyText(node, text) {
@@ -2481,6 +2497,7 @@ async function generateTask(mode = 'practice', sessionOverrides = {}) {
   renderSolutionPanel();
   renderResults(null);
   hideAiHintPanel();
+  els.aiBreakdownPanel?.classList.add('hidden');
   state.taskStartedAt = Date.now();
   if (els.shareSeedBtn) els.shareSeedBtn.disabled = false;
   const practiceFocusLabel = mode === 'practice' ? getPracticeFocusLabel() : '';
@@ -2523,6 +2540,12 @@ async function runCurrentTask() {
         if (streakMilestone > 0) {
           showStreakCelebration(streakMilestone);
         }
+        // Track goal progress and challenge day
+        trackGoalProgress(state.currentTask);
+        checkChallengeDay(state.currentTask);
+        // AI breakdown — fire-and-forget
+        void requestAiBreakdown(state.currentTask);
+
         if (state.session.active) {
           // Auto-advance session after 1.5s
           setTimeout(() => advanceSession(true), 1500);
@@ -3589,6 +3612,318 @@ async function requestAiHint() {
   }
 }
 
+// ── AI Breakdown (post-success) ───────────────────────────────────────────────
+
+let _breakdownLoading = false;
+
+async function requestAiBreakdown(task) {
+  if (_breakdownLoading || !task || !isLoggedIn()) return;
+  _breakdownLoading = true;
+
+  if (els.aiBreakdownPanel) {
+    els.aiBreakdownPanel.classList.remove('hidden');
+    if (els.aiBreakdownBody) els.aiBreakdownBody.innerHTML = '<span class="ai-hint-loading">✨ Анализирую решение...</span>';
+  }
+
+  try {
+    const res = await apiFetch('/ai/breakdown', {
+      method: 'POST',
+      body:   JSON.stringify({
+        taskTitle:    task.title,
+        taskPrompt:   task.prompt,
+        signature:    task.signature,
+        language:     task.editorLanguage || 'javascript',
+        userSolution: getEditorValue(),
+        category:     task.category,
+        strategy:     task.strategy,
+      }),
+    });
+
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      if (d.code === 'AI_NOT_CONFIGURED') {
+        els.aiBreakdownPanel?.classList.add('hidden');
+        return;
+      }
+      throw new Error(d.message || `HTTP ${res.status}`);
+    }
+
+    const { breakdown } = await res.json();
+    if (!breakdown || !els.aiBreakdownBody) return;
+
+    els.aiBreakdownBody.innerHTML = [
+      breakdown.concept    ? `<div class="ai-breakdown-item"><div class="ai-breakdown-item-label">Что применил</div><div class="ai-breakdown-item-text">${escapeHtml(breakdown.concept)}</div></div>` : '',
+      breakdown.whyItWorks ? `<div class="ai-breakdown-item"><div class="ai-breakdown-item-label">Почему работает</div><div class="ai-breakdown-item-text">${escapeHtml(breakdown.whyItWorks)}</div></div>` : '',
+      breakdown.edgeCases  ? `<div class="ai-breakdown-item"><div class="ai-breakdown-item-label">Edge cases</div><div class="ai-breakdown-item-text">${escapeHtml(breakdown.edgeCases)}</div></div>` : '',
+      breakdown.nextStep   ? `<div class="ai-breakdown-item"><div class="ai-breakdown-item-label">Что дальше</div><div class="ai-breakdown-item-text">${escapeHtml(breakdown.nextStep)}</div></div>` : '',
+    ].filter(Boolean).join('');
+  } catch {
+    els.aiBreakdownPanel?.classList.add('hidden');
+  } finally {
+    _breakdownLoading = false;
+  }
+}
+
+// ── Challenges ────────────────────────────────────────────────────────────────
+
+const CHALLENGE_DEFS = [
+  { id: 'arrays-7d',    emoji: '📦', name: '7 дней массивов',          desc: 'filter, map, reduce — каждый день одна задача',             days: 7,  categories: ['arrays'],              dailyGoal: 1 },
+  { id: 'js-14d',       emoji: '⚡', name: '14 дней JavaScript core',   desc: 'Функции, замыкания, async — базовый JS за 2 недели',        days: 14, categories: ['functions','closures','async'], dailyGoal: 1 },
+  { id: 'junior-30d',   emoji: '🎯', name: '30 дней до уверенного junior', desc: 'Все категории, нарастающая сложность — месяц до результата', days: 30, categories: null, dailyGoal: 2 },
+  { id: 'async-7d',     emoji: '🔄', name: 'Async без боли',            desc: 'Promise, await, race, retry — 7 дней чистого async',        days: 7,  categories: ['async'],               dailyGoal: 1 },
+  { id: 'algo-10d',     emoji: '🧮', name: 'Алгоритмы для тех кто боится', desc: '10 дней — алгоритмы станут понятны',                      days: 10, categories: ['algorithms'],          dailyGoal: 1 },
+];
+
+const CHALLENGES_KEY = 'jt.challenges.v1';
+
+function loadChallenges() {
+  try { return JSON.parse(localStorage.getItem(CHALLENGES_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function saveChallenges(data) {
+  localStorage.setItem(CHALLENGES_KEY, JSON.stringify(data));
+}
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function getChallengeProgress(challenges, id) {
+  return challenges[id] || null;
+}
+
+function startChallenge(id) {
+  const challenges = loadChallenges();
+  if (challenges[id]?.completedAt) return; // already done
+  challenges[id] = { startedAt: Date.now(), completedDays: [], completedAt: null };
+  saveChallenges(challenges);
+}
+
+function markChallengeDay(id) {
+  const challenges = loadChallenges();
+  const ch = challenges[id];
+  if (!ch || ch.completedAt) return;
+  const today = todayStr();
+  if (!ch.completedDays.includes(today)) {
+    ch.completedDays.push(today);
+    const def = CHALLENGE_DEFS.find((d) => d.id === id);
+    if (def && ch.completedDays.length >= def.days) {
+      ch.completedAt = Date.now();
+    }
+    saveChallenges(challenges);
+  }
+}
+
+function getActiveChallengeId() {
+  const challenges = loadChallenges();
+  for (const def of CHALLENGE_DEFS) {
+    const ch = challenges[def.id];
+    if (ch && !ch.completedAt) return def.id;
+  }
+  return null;
+}
+
+function renderChallengesOverlay() {
+  if (!els.challengesList) return;
+  const challenges = loadChallenges();
+  const activeId = getActiveChallengeId();
+
+  // Active challenge bar
+  if (activeId && els.activeChallengeBar) {
+    const def = CHALLENGE_DEFS.find((d) => d.id === activeId);
+    const ch  = challenges[activeId];
+    const done = ch?.completedDays?.length ?? 0;
+    const today = todayStr();
+    const doneToday = ch?.completedDays?.includes(today);
+    els.activeChallengeBar.classList.remove('hidden');
+    els.activeChallengeBar.innerHTML = `
+      <div class="active-challenge-bar-top">
+        <span class="active-challenge-name">${def?.emoji} ${escapeHtml(def?.name ?? '')}</span>
+        <span class="active-challenge-days">День ${done}/${def?.days}</span>
+      </div>
+      <div class="active-challenge-dots">
+        ${Array.from({ length: def?.days ?? 0 }, (_, i) => {
+          const dayDate = new Date((ch?.startedAt ?? Date.now()) + i * 86400000).toISOString().slice(0, 10);
+          const isDone  = ch?.completedDays?.includes(dayDate);
+          const isToday = i === done && !doneToday;
+          return `<div class="challenge-day-dot ${isDone ? 'done' : isToday ? 'today' : ''}">${isDone ? '✓' : i + 1}</div>`;
+        }).join('')}
+      </div>
+      ${doneToday ? '<span style="font-size:0.82rem;color:var(--accent-3)">✓ Сегодня выполнено</span>' : '<span style="font-size:0.82rem;color:var(--muted)">Реши задачи чтобы закрыть день</span>'}
+    `;
+  } else {
+    els.activeChallengeBar?.classList.add('hidden');
+  }
+
+  // Challenge list
+  els.challengesList.innerHTML = CHALLENGE_DEFS.map((def) => {
+    const ch = challenges[def.id];
+    const done = ch?.completedDays?.length ?? 0;
+    const isActive = def.id === activeId;
+    const isCompleted = Boolean(ch?.completedAt);
+    return `
+      <div class="challenge-card ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
+        <div class="challenge-card-top">
+          <span class="challenge-emoji">${def.emoji}</span>
+          <div class="challenge-card-info">
+            <div class="challenge-card-name">${escapeHtml(def.name)}</div>
+            <div class="challenge-card-desc">${escapeHtml(def.desc)}</div>
+          </div>
+          <span class="challenge-badge ${isCompleted ? 'challenge-badge-done' : 'challenge-badge-days'}">
+            ${isCompleted ? '✓ Готово' : isActive ? `${done}/${def.days}д` : `${def.days}д`}
+          </span>
+        </div>
+        ${!isActive && !isCompleted ? `<button class="button button-primary challenge-start-btn" data-start-challenge="${def.id}" type="button">Начать</button>` : ''}
+        ${isActive ? `<button class="button button-secondary challenge-start-btn" data-stop-challenge="${def.id}" type="button">Прекратить</button>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function showChallengesOverlay() {
+  renderChallengesOverlay();
+  els.challengesOverlay?.classList.remove('hidden');
+  els.challengesOverlay?.setAttribute('aria-hidden', 'false');
+}
+
+function hideChallengesOverlay() {
+  els.challengesOverlay?.classList.add('hidden');
+  els.challengesOverlay?.setAttribute('aria-hidden', 'true');
+}
+
+// Check if current solve should mark challenge day
+function checkChallengeDay(task) {
+  const activeId = getActiveChallengeId();
+  if (!activeId) return;
+  const def = CHALLENGE_DEFS.find((d) => d.id === activeId);
+  if (!def) return;
+  const catMatch = !def.categories || def.categories.includes(task?.category);
+  if (catMatch) markChallengeDay(activeId);
+}
+
+// ── Personal Goals ────────────────────────────────────────────────────────────
+
+const GOAL_DEFS = [
+  { id: 'time-15',     icon: '⏱',  name: '15 минут в день',        desc: 'Короткие сессии — лучший способ не бросить', type: 'time', value: 15 },
+  { id: 'tasks-3',     icon: '✅',  name: '3 задачи в день',         desc: 'Три решённых задачи — понятный ориентир',    type: 'tasks', value: 3  },
+  { id: 'topic-async', icon: '🔄',  name: 'Закрыть async за неделю', desc: 'Фокус на одной теме пока не станет уверенно', type: 'topic', value: 'async' },
+  { id: 'interview',   icon: '💼',  name: 'Готовлюсь к собеседованию', desc: 'Алгоритмы и паттерны — курс на сложные задачи', type: 'interview', value: 'hard' },
+  { id: 'relaxed',     icon: '🌿',  name: 'Свободная практика',      desc: 'Без целей и дедлайнов — просто тренируюсь',  type: 'free', value: null },
+];
+
+const GOAL_KEY = 'jt.goal.v1';
+
+function loadGoal() {
+  try { return JSON.parse(localStorage.getItem(GOAL_KEY) || 'null'); }
+  catch { return null; }
+}
+
+function saveGoal(goal) {
+  localStorage.setItem(GOAL_KEY, JSON.stringify(goal));
+}
+
+function clearGoal() {
+  localStorage.removeItem(GOAL_KEY);
+}
+
+function getGoalStatusText() {
+  const goal = loadGoal();
+  if (!goal) return null;
+  const def = GOAL_DEFS.find((d) => d.id === goal.id);
+  if (!def) return null;
+
+  const today = new Date().toLocaleDateString('sv-SE');
+  const solved = state.progress.solved || 0;
+  const timeMs = state.progress.totalSolveTimeMs || 0;
+
+  if (def.type === 'time') {
+    const todayTimeMs = Number(localStorage.getItem(`jt.goal.timeToday.${today}`) || 0);
+    const pct = Math.min(100, Math.round((todayTimeMs / (def.value * 60000)) * 100));
+    return `${def.icon} ${def.name}: ${Math.round(todayTimeMs / 60000)}/${def.value} мин (${pct}%)`;
+  }
+  if (def.type === 'tasks') {
+    const todayTasks = Number(localStorage.getItem(`jt.goal.tasksToday.${today}`) || 0);
+    return `${def.icon} ${def.name}: ${todayTasks}/${def.value} задач сегодня`;
+  }
+  return `${def.icon} ${def.name} — активна`;
+}
+
+function applyGoalToSettings(goal) {
+  if (!goal) return;
+  const def = GOAL_DEFS.find((d) => d.id === goal.id);
+  if (!def) return;
+  if (def.type === 'topic') {
+    state.settings.selectedCategories = [def.value];
+    state.settings.focusCategory = def.value;
+    state.settings.randomMode = false;
+    saveSettings();
+    applySettingsToControls();
+  }
+  if (def.type === 'interview') {
+    state.settings.selectedDifficulties = ['medium', 'hard'];
+    state.settings.selectedCategories = ['algorithms', 'functions', 'arrays'];
+    saveSettings();
+    applySettingsToControls();
+  }
+}
+
+function trackGoalProgress(task) {
+  const goal = loadGoal();
+  if (!goal) return;
+  const def = GOAL_DEFS.find((d) => d.id === goal.id);
+  if (!def) return;
+  const today = new Date().toLocaleDateString('sv-SE');
+  if (def.type === 'tasks') {
+    const key = `jt.goal.tasksToday.${today}`;
+    localStorage.setItem(key, String(Number(localStorage.getItem(key) || 0) + 1));
+  }
+  if (def.type === 'time' && state.taskStartedAt) {
+    const elapsed = Date.now() - state.taskStartedAt;
+    const key = `jt.goal.timeToday.${today}`;
+    localStorage.setItem(key, String(Number(localStorage.getItem(key) || 0) + elapsed));
+  }
+}
+
+function renderGoalsOverlay() {
+  if (!els.goalsList) return;
+  const current = loadGoal();
+
+  els.goalsList.innerHTML = GOAL_DEFS.map((def) => {
+    const isActive = current?.id === def.id;
+    return `
+      <button class="goal-option ${isActive ? 'active' : ''}" data-goal-id="${escapeHtml(def.id)}" type="button">
+        <span class="goal-option-icon">${def.icon}</span>
+        <div class="goal-option-info">
+          <div class="goal-option-name">${escapeHtml(def.name)}</div>
+          <div class="goal-option-desc">${escapeHtml(def.desc)}</div>
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  const status = getGoalStatusText();
+  if (status && els.activeGoalStatus) {
+    els.activeGoalStatus.innerHTML = `<strong>Сегодня</strong>${escapeHtml(status)}`;
+    els.activeGoalStatus.classList.remove('hidden');
+  } else {
+    els.activeGoalStatus?.classList.add('hidden');
+  }
+
+  if (els.goalsClearBtn) {
+    els.goalsClearBtn.classList.toggle('hidden', !current);
+  }
+}
+
+function showGoalsOverlay() {
+  renderGoalsOverlay();
+  els.goalsOverlay?.classList.remove('hidden');
+  els.goalsOverlay?.setAttribute('aria-hidden', 'false');
+}
+
+function hideGoalsOverlay() {
+  els.goalsOverlay?.classList.add('hidden');
+  els.goalsOverlay?.setAttribute('aria-hidden', 'true');
+}
+
 // ── Account modal ─────────────────────────────────────────────────────────────
 
 async function showAccountModal() {
@@ -4119,6 +4454,8 @@ function setupControlListeners() {
       hideLeaderboard();
       hideReturnOverlay();
       hideProgressReport();
+      hideChallengesOverlay();
+      hideGoalsOverlay();
     }
   });
 
@@ -4155,6 +4492,56 @@ function setupControlListeners() {
 
   // ── AI Hint ───────────────────────────────────────────────────────────────
   els.aiHintBtn?.addEventListener('click', () => void requestAiHint());
+
+  // ── AI Breakdown ──────────────────────────────────────────────────────────
+  els.aiBreakdownCloseBtn?.addEventListener('click', () => els.aiBreakdownPanel?.classList.add('hidden'));
+
+  // ── Challenges ────────────────────────────────────────────────────────────
+  els.challengesOpenBtn?.addEventListener('click', showChallengesOverlay);
+  els.challengesCloseBtn?.addEventListener('click', hideChallengesOverlay);
+
+  els.challengesList?.addEventListener('click', (e) => {
+    const startBtn = e.target.closest('[data-start-challenge]');
+    const stopBtn  = e.target.closest('[data-stop-challenge]');
+    if (startBtn) {
+      startChallenge(startBtn.dataset.startChallenge);
+      renderChallengesOverlay();
+      // Apply challenge categories to settings
+      const def = CHALLENGE_DEFS.find((d) => d.id === startBtn.dataset.startChallenge);
+      if (def?.categories) {
+        state.settings.selectedCategories = def.categories.slice();
+        saveSettings();
+        applySettingsToControls();
+      }
+      setRunStatus(`Челлендж "${def?.name}" начат! Удачи.`, 'success');
+    }
+    if (stopBtn) {
+      const challenges = loadChallenges();
+      delete challenges[stopBtn.dataset.stopChallenge];
+      saveChallenges(challenges);
+      renderChallengesOverlay();
+    }
+  });
+
+  // ── Goals ─────────────────────────────────────────────────────────────────
+  els.goalsOpenBtn?.addEventListener('click', showGoalsOverlay);
+  els.goalsCloseBtn?.addEventListener('click', hideGoalsOverlay);
+
+  els.goalsList?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-goal-id]');
+    if (!btn) return;
+    const goal = { id: btn.dataset.goalId, setAt: Date.now() };
+    saveGoal(goal);
+    applyGoalToSettings(goal);
+    renderGoalsOverlay();
+    setRunStatus(`Цель "${GOAL_DEFS.find((d) => d.id === goal.id)?.name}" установлена.`, 'success');
+  });
+
+  els.goalsClearBtn?.addEventListener('click', () => {
+    clearGoal();
+    renderGoalsOverlay();
+    setRunStatus('Цель сброшена.', 'neutral');
+  });
 }
 
 async function init() {
@@ -4176,6 +4563,9 @@ async function init() {
   updateProgressView();
   updateAchievementsView();
   renderOnboardingTrack();
+
+  // Apply personal goal to settings on startup
+  applyGoalToSettings(loadGoal());
 
   const hasExistingActivity = state.progress.solved > 0 || state.progress.attempted > 0 || state.customTasks.length > 0;
   if (hasExistingActivity && !state.onboarding.completed) {

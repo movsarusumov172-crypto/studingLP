@@ -12,6 +12,8 @@ const MAX_STREAK   = 10_000;
 const MAX_TIME_MS  = 30 * 24 * 60 * 60 * 1000; // 30 дней суммарно — разумный предел
 
 const progressBodySchema = z.object({
+  // Client can send its local updatedAt for conflict detection
+  clientUpdatedAt:    z.number().int().min(0).optional(),
   xp:                 z.number().int().min(0).max(MAX_XP),
   solved:             z.number().int().min(0).max(MAX_SOLVED),
   attempted:          z.number().int().min(0).max(MAX_SOLVED),
@@ -71,6 +73,16 @@ export async function progressRoutes(app: FastifyInstance): Promise<void> {
         code:   'VALIDATION_ERROR',
         issues: body.error.flatten().fieldErrors,
       });
+    }
+
+    // Versioning: if client sends clientUpdatedAt, check against server's updatedAt.
+    // If server is newer, return conflict so client can merge.
+    if (body.data.clientUpdatedAt !== undefined) {
+      const existing = await progressService.get(request.user.sub, kernelId as never);
+      if (existing && existing.updatedAt.getTime() > body.data.clientUpdatedAt) {
+        // Server is newer — return server data with 409 so client can merge
+        return reply.code(409).send({ conflict: true, serverProgress: existing });
+      }
     }
 
     const row = await progressService.upsert(request.user.sub, kernelId as never, body.data);
