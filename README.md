@@ -334,6 +334,9 @@ npm run dist     # → dist/JS Infinite Trainer Setup 1.0.0.exe
 - [x] Улучшенный разбор ошибок — edge case, off-by-one, пустой return, тип не тот
 - [x] Quieter UI — важные кнопки на виду, редкие в ⋯ overflow-меню
 - [x] Account modal с план-бейджем и управлением подпиской
+- [x] **Onboarding с диагностикой** — goal selection (3 цели), 5 диагностических задач, skill map, автовыставление фокуса
+- [x] **Режим "вернулся после перерыва"** — детекция 7+ дней, мягкий welcome-back, лёгкая разминка без давления
+- [x] **Страница прогресса** — 📊 отчёт со статами, category bars, достижениями, HTML-экспорт
 - [x] Windows installer (.exe, NSIS, custom icon)
 - [x] GitHub Release: https://github.com/movsarusumov172-crypto/studingLP/releases
 
@@ -341,17 +344,19 @@ npm run dist     # → dist/JS Infinite Trainer Setup 1.0.0.exe
 - [x] Cloud auth: JWT + refresh token rotation + bcrypt
 - [x] Progress sync: offline-first, merge стратегия
 - [x] Custom tasks: CRUD локально + sync на бэке
-- [x] Leaderboard (top-50, анонимизация email)
+- [x] Leaderboard (top-50, анонимизация email) — Pro only, server-side enforced
 - [x] Stripe billing: checkout, webhook, portal (не настроен в прод)
 - [x] Freemium: все языки бесплатно, лидерборд — Pro
 - [x] Email: welcome + Pro receipt через Resend (не настроен)
 - [x] Sentry: error tracking (не настроен)
 - [x] Rate limiting: 200 req/min глобально, 10/min на auth
-- [x] Security: input validation с max bounds, timing attack защита
+- [x] Security: input validation с max bounds, timing attack защита, 0 critical уязвимостей
+- [x] **AI hints роут** (`POST /ai/hint`) — Claude API разбор ошибок (нужен `ANTHROPIC_API_KEY`)
+- [x] **Integration tests 19/19** — auth, progress, custom tasks, leaderboard plan enforcement
 
 ## Что не сделано ❌
 
-- [ ] AI hints (Claude API) — разбор ошибок при падении теста
+- [ ] AI hints активированы — нужно добавить `ANTHROPIC_API_KEY` в Railway
 - [ ] Friends / дуэли — соревнование 1v1
 - [ ] Team mode — командный прогресс
 - [ ] Code signing — сейчас Windows SmartScreen предупреждает
@@ -404,6 +409,46 @@ custom_tasks:  нет
 ## Change Log
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
+
+### 2026-05-14 — Claude Code — onboarding, return mode, AI hints, progress report, integration tests
+
+**Request:** реализовать top-5 фич из README2/README3 пока пользователь спит.
+
+**Changed files:**
+- `studingJS/src/renderer/index.html` — новые overlays (diagnostic, return, progress report, AI hint panel)
+- `studingJS/src/renderer/styles.css` — стили для всех новых компонентов
+- `studingJS/src/renderer/app.js` — вся логика новых фич
+- `server/src/routes/ai.ts` — новый роут POST /ai/hint
+- `server/src/routes/leaderboard.ts` — inline Pro enforcement
+- `server/src/middleware/requirePlan.ts` — return fix для Fastify v5
+- `server/src/tests/integration.test.ts` — 19 интеграционных тестов
+- `server/src/index.ts` — content-type parser fix для Fastify v5 пустых тел
+- `server/package.json` — @neondatabase/serverless 0.9.5→1.1.0, @anthropic-ai/sdk
+
+**What changed:**
+
+1. **Onboarding с диагностикой:** Экран выбора цели (3 варианта) → 5 diagnostic задач (по одной на key категорию) → post-session skill map + автовыставление фокуса на слабые темы.
+
+2. **Режим "вернулся после перерыва":** `localStorage.jt.lastVisitAt` обновляется при каждом старте. Если прошло 7+ дней — gentle overlay со статистикой и кнопкой "лёгкая разминка".
+
+3. **AI hints:** `/ai/hint` роут на бэке — принимает task + userCode + error, вызывает Claude claude-haiku-4-5, возвращает объяснение на русском. Кнопка "✨ Объяснить с ИИ" в UI после падения теста. Нужен `ANTHROPIC_API_KEY` в Railway env vars.
+
+4. **Страница прогресса:** Кнопка 📊 в overflow-меню. Отчёт с статами, category mastery bars, достижениями. Экспорт в self-contained HTML файл.
+
+5. **Integration tests 19/19:** Покрывают auth (register/login/refresh/logout/me), progress CRUD + validation, custom tasks CRUD, leaderboard plan enforcement (403 free users). `npm run test:integration:prod` против продакшна.
+
+**Bugs fixed along the way:**
+- `@neondatabase/serverless` peer dep conflict с drizzle-orm@0.45.2 ломал `npm ci` в Docker → Railway deploy падал
+- Fastify v5: DELETE с пустым телом и `Content-Type: application/json` → 500. Исправлен content-type parser и тест
+- `requirePlan` middleware не останавливал выполнение → добавлен `return` и inline enforcement в leaderboard route
+
+**Verification:**
+- `npm run theory:practice` — passed 94 topics
+- `npm run smoke` — passed 200 tasks
+- Integration tests 19/19 против production Railway
+- `npx tsc --noEmit` — 0 errors
+- `npm ci` — clean install without --legacy-peer-deps
+- Railway deploy — Online, health check OK
 
 ### 2026-05-13 — Codex — project diagnostics note
 
