@@ -3558,7 +3558,6 @@ let _aiHintLoading = false;
 
 function showAiHintPanel() {
   if (!els.aiHintPanel) return;
-  if (!isLoggedIn()) return; // silently skip if not logged in
   els.aiHintPanel.classList.remove('hidden');
   if (els.aiHintResult) els.aiHintResult.classList.add('hidden');
 }
@@ -3577,8 +3576,15 @@ async function requestAiHint() {
     els.aiHintResult.innerHTML = '<span class="ai-hint-loading">✨ Думаю...</span>';
   }
 
+  // Not logged in — show auth prompt
+  if (!isLoggedIn()) {
+    if (els.aiHintResult) els.aiHintResult.textContent = 'Войди в аккаунт чтобы получить AI-подсказку (кнопка ☁ в профиле).';
+    _aiHintLoading = false;
+    if (els.aiHintBtn) els.aiHintBtn.disabled = false;
+    return;
+  }
+
   try {
-    const { apiFetch } = await import('./api/client.mjs');
     const failedTest = Array.isArray(state.currentReport?.tests)
       ? state.currentReport.tests.find((t) => !t.passed)
       : null;
@@ -3586,24 +3592,28 @@ async function requestAiHint() {
     const res = await apiFetch('/ai/hint', {
       method: 'POST',
       body:   JSON.stringify({
-        taskTitle:   state.currentTask.title,
-        taskPrompt:  state.currentTask.prompt,
-        signature:   state.currentTask.signature,
-        userCode:    getEditorValue(),
-        error:       state.currentReport.error || '',
-        failedInput: failedTest?.input,
+        taskTitle:      state.currentTask.title,
+        taskPrompt:     state.currentTask.prompt,
+        signature:      state.currentTask.signature,
+        language:       state.currentTask.editorLanguage || 'javascript',
+        userCode:       getEditorValue(),
+        error:          state.currentReport.error || '',
+        failedInput:    failedTest?.input,
         failedExpected: failedTest?.expected,
         failedActual:   failedTest?.actual,
       }),
     });
 
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.message || `HTTP ${res.status}`);
+    const d = await res.json().catch(() => ({}));
+
+    if (res.status === 503 && d.code === 'AI_NOT_CONFIGURED') {
+      if (els.aiHintResult) els.aiHintResult.textContent = 'AI пока не настроен. Владелец приложения должен добавить ANTHROPIC_API_KEY в Railway.';
+      return;
     }
 
-    const { hint } = await res.json();
-    if (els.aiHintResult) els.aiHintResult.textContent = hint;
+    if (!res.ok) throw new Error(d.message || `HTTP ${res.status}`);
+
+    if (els.aiHintResult) els.aiHintResult.textContent = d.hint || 'Нет ответа от ИИ.';
   } catch (err) {
     if (els.aiHintResult) els.aiHintResult.textContent = `Не удалось получить подсказку: ${err.message}`;
   } finally {
@@ -3641,8 +3651,9 @@ async function requestAiBreakdown(task) {
 
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      if (d.code === 'AI_NOT_CONFIGURED') {
-        els.aiBreakdownPanel?.classList.add('hidden');
+      if (res.status === 503 && d.code === 'AI_NOT_CONFIGURED') {
+        if (els.aiBreakdownBody) els.aiBreakdownBody.innerHTML =
+          '<div class="ai-breakdown-item"><div class="ai-breakdown-item-text" style="color:var(--muted);font-size:0.84rem">AI-разбор заработает как только будет добавлен ANTHROPIC_API_KEY.</div></div>';
         return;
       }
       throw new Error(d.message || `HTTP ${res.status}`);

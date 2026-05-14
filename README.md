@@ -410,6 +410,35 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху. Этот раздел нужен, чтобы пользователь, Codex и Claude Code видели, какие изменения сделал Codex и как они проверялись.
 
+### 2026-05-15 — Codex — README2 project verdict
+
+**Request:** проверить проект, сделать вердикт что нужно и что не нужно, записать вывод в `README2`.
+
+**Changed files:**
+- `README.md`
+- `README2.md`
+
+**What changed:**
+- В начало `README2.md` добавлен актуальный вердикт по проекту: текущее состояние, что делать в первую очередь, что пока не делать, приоритет работ и список проверок.
+- В вывод включены свежие результаты frontend/backend diagnostics и dependency audit.
+
+**Verification:**
+- `npm run theory:practice` — passed, 94 topics.
+- `npm run theory:coverage` — passed, 94 topics across 7 languages.
+- `npm run smoke` — passed, 200 generated tasks.
+- `npm run tasks:contract` — passed, 7 files.
+- `npm run runtime:timeout` — passed.
+- `node --check ...` для Electron/renderer entry points — passed.
+- `npm run build` в `server` — passed.
+- `npm audit --omit=dev --audit-level=moderate` в `server` — passed, 0 vulnerabilities.
+- `npm audit --omit=dev --audit-level=moderate` в `studingJS` — failed из-за moderate DOMPurify issues через `monaco-editor`.
+- `npm run test:integration -- --test-only` в `server` — failed, локальный backend на `localhost:3000` не был запущен.
+- `git diff --check -- README.md README2.md` — passed.
+
+**Coordination notes:**
+- Это документационная правка; код, инсталлер, git push и GitHub Release не трогались.
+- Следующим техническим фокусом лучше брать secure refresh token storage в Electron и нормальный staging/local runner для backend integration tests.
+
 ### 2026-05-14 — Claude Code — onboarding, return mode, AI hints, progress report, integration tests
 
 **Request:** реализовать top-5 фич из README2/README3 пока пользователь спит.
