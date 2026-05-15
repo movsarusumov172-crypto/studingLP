@@ -257,6 +257,7 @@
             </div>
             <div class="hero-actions">
               <button id="showHintBtn" class="button button-secondary button-quiet" type="button">Подсказка</button>
+              <button id="aiHintBtn" class="button button-secondary ai-hint-hero-btn hidden" type="button">✨ ИИ</button>
               <button id="nextTaskBtn" class="button button-secondary" type="button">Следующая</button>
               <details class="overflow-menu hero-overflow-menu">
                 <summary class="button button-secondary more-menu-trigger" aria-label="Дополнительные действия задачи" title="Дополнительно">⋯</summary>
@@ -320,14 +321,11 @@
               <h2>Результаты</h2>
               <span class="muted">Проверка решения</span>
             </div>
+            <!-- AI hint result: appears above test results after FAIL -->
+            <div id="aiHintResult" class="ai-hint-result hidden"></div>
+
             <div id="testResults" class="test-results"></div>
             <div id="learningFeedback" class="learning-feedback"></div>
-
-            <!-- AI hint: shown after test FAILS -->
-            <div id="aiHintPanel" class="ai-hint-panel hidden">
-              <button id="aiHintBtn" class="button button-secondary ai-hint-btn" type="button">✨ Объяснить с ИИ</button>
-              <div id="aiHintResult" class="ai-hint-result hidden"></div>
-            </div>
 
             <!-- AI breakdown: shown after test PASSES -->
             <div id="aiBreakdownPanel" class="ai-breakdown-panel hidden">

@@ -438,7 +438,6 @@ const els = {
   progressReportBody:     document.getElementById('progressReportBody'),
   progressReportTitle:    document.getElementById('progressReportTitle'),
   progressReportExportBtn:document.getElementById('progressReportExportBtn'),
-  aiHintPanel:            document.getElementById('aiHintPanel'),
   aiHintBtn:              document.getElementById('aiHintBtn'),
   aiHintResult:           document.getElementById('aiHintResult'),
   aiBreakdownPanel:       document.getElementById('aiBreakdownPanel'),
@@ -3557,13 +3556,14 @@ ${achieved.length > 0 ? `<div class="section"><div class="section-title">Дос�
 let _aiHintLoading = false;
 
 function showAiHintPanel() {
-  if (!els.aiHintPanel) return;
-  els.aiHintPanel.classList.remove('hidden');
+  // Show the button in hero-actions
+  els.aiHintBtn?.classList.remove('hidden');
   if (els.aiHintResult) els.aiHintResult.classList.add('hidden');
 }
 
 function hideAiHintPanel() {
-  els.aiHintPanel?.classList.add('hidden');
+  els.aiHintBtn?.classList.add('hidden');
+  els.aiHintResult?.classList.add('hidden');
 }
 
 async function requestAiHint() {

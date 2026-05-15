@@ -3051,6 +3051,20 @@ details.panel[open] > summary {
   gap: 10px;
 }
 
+/* Button in hero-actions row */
+.ai-hint-hero-btn {
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #c4b5fd;
+  font-size: 0.86rem;
+}
+
+.ai-hint-hero-btn:hover:not(:disabled) {
+  border-color: rgba(139, 92, 246, 0.6);
+  background: rgba(139, 92, 246, 0.1);
+  color: #ddd6fe;
+}
+
+/* Legacy — kept for reference */
 .ai-hint-btn {
   width: 100%;
   font-size: 0.88rem;
@@ -3060,22 +3074,18 @@ details.panel[open] > summary {
   color: #c4b5fd;
 }
 
-.ai-hint-btn:hover:not(:disabled) {
-  border-color: rgba(139, 92, 246, 0.55);
-  background: rgba(139, 92, 246, 0.08);
-  color: #ddd6fe;
-}
-
 .ai-hint-result {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid rgba(139, 92, 246, 0.25);
+  border-left: 3px solid #a78bfa;
   background: rgba(139, 92, 246, 0.06);
   font-size: 0.9rem;
   line-height: 1.65;
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
+  margin-bottom: 10px;
 }
 
 .ai-hint-loading {
