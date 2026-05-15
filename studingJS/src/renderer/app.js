@@ -4520,20 +4520,7 @@ function setupControlListeners() {
   els.progressReportExportBtn?.addEventListener('click', exportProgressAsHTML);
 
   // ── AI Hint ───────────────────────────────────────────────────────────────
-  els.aiHintBtn?.addEventListener('click', () => {
-    // Privacy notice: first-time consent
-    const consentKey = 'jt.ai.consent';
-    if (!localStorage.getItem(consentKey)) {
-      const ok = confirm(
-        'При нажатии "ОК" условие задачи и твой код отправляются на наш сервер, ' +
-        'а затем в Google Gemini AI для получения подсказки.\n\n' +
-        'Данные не сохраняются. Продолжить?'
-      );
-      if (!ok) return;
-      localStorage.setItem(consentKey, '1');
-    }
-    void requestAiHint();
-  });
+  els.aiHintBtn?.addEventListener('click', () => void requestAiHint());
 
   // ── AI Breakdown ──────────────────────────────────────────────────────────
   els.aiBreakdownCloseBtn?.addEventListener('click', () => els.aiBreakdownPanel?.classList.add('hidden'));
