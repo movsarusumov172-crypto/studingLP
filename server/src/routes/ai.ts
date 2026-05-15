@@ -3,32 +3,42 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { env } from '../config.js';
 
-// ── Shared AI client ──────────────────────────────────────────────────────────
+const GEMINI_MODEL = 'gemini-flash-lite-latest';
 
-async function callClaude(prompt: string, maxTokens = 350): Promise<string> {
-  if (!env.ANTHROPIC_API_KEY) throw new Error('AI_NOT_CONFIGURED');
-  const { Anthropic } = await import('@anthropic-ai/sdk');
-  const client  = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const message = await client.messages.create({
-    model:      'claude-haiku-4-5',
-    max_tokens: maxTokens,
-    messages:   [{ role: 'user', content: prompt }],
+// ── Gemini API client ─────────────────────────────────────────────────────────
+
+async function callGemini(prompt: string, maxTokens = 400): Promise<string> {
+  if (!env.GEMINI_API_KEY) throw new Error('AI_NOT_CONFIGURED');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+
+  const res = await fetch(url, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.4 },
+    }),
   });
-  return message.content
-    .filter((c) => c.type === 'text')
-    .map((c) => (c as { type: 'text'; text: string }).text)
-    .join('').trim();
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as any;
+    throw new Error(`Gemini error ${res.status}: ${err?.error?.message ?? res.statusText}`);
+  }
+
+  const data = await res.json() as any;
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
 }
 
 function notConfiguredReply(reply: any) {
   return reply.code(503).send({
     error:   'AI not configured',
     code:    'AI_NOT_CONFIGURED',
-    message: 'Добавь ANTHROPIC_API_KEY в переменные окружения Railway.',
+    message: 'Добавь GEMINI_API_KEY в переменные окружения Railway.',
   });
 }
 
-// ── Route schemas ─────────────────────────────────────────────────────────────
+// ── Schemas ───────────────────────────────────────────────────────────────────
 
 const hintSchema = z.object({
   taskTitle:      z.string().max(200),
@@ -56,10 +66,9 @@ const breakdownSchema = z.object({
 
 export async function aiRoutes(app: FastifyInstance): Promise<void> {
   // ── POST /ai/hint ─────────────────────────────────────────────────────────
-  // Why did the test fail? Called after test failure.
 
   app.post('/ai/hint', { preHandler: authenticate }, async (request, reply) => {
-    if (!env.ANTHROPIC_API_KEY) return notConfiguredReply(reply);
+    if (!env.GEMINI_API_KEY) return notConfiguredReply(reply);
 
     const body = hintSchema.safeParse(request.body);
     if (!body.success) return reply.code(422).send({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
@@ -70,9 +79,9 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       `Задача: "${taskTitle}"`,
       `Условие: ${taskPrompt}`,
       signature ? `Сигнатура: ${signature}` : '',
-      `\nКод пользователя (${language}):\n\`\`\`${language}\n${userCode}\n\`\`\``,
+      `\nКод (${language}):\n\`\`\`${language}\n${userCode}\n\`\`\``,
       error           ? `\nОшибка: ${error}` : '',
-      failedInput     !== undefined ? `\nВход теста: ${JSON.stringify(failedInput)}` : '',
+      failedInput     !== undefined ? `Вход теста: ${JSON.stringify(failedInput)}` : '',
       failedExpected  !== undefined ? `Ожидалось: ${JSON.stringify(failedExpected)}` : '',
       failedActual    !== undefined ? `Получилось: ${JSON.stringify(failedActual)}` : '',
     ].filter(Boolean).join('\n');
@@ -81,14 +90,14 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
 
 ${ctx}
 
-Ответь в 2-3 предложениях на русском:
-1. Что конкретно пошло не так (конкретная строка/логика если видно)
+Объясни в 2-3 предложениях на русском языке:
+1. Что конкретно пошло не так
 2. На что обратить внимание чтобы исправить
 
-Не показывай готовое решение — только направление. Говори как живой наставник, без списков и заголовков.`;
+Не показывай готовое решение. Говори просто, без заголовков и списков.`;
 
     try {
-      const hint = await callClaude(prompt, 300);
+      const hint = await callGemini(prompt, 300);
       return reply.send({ hint });
     } catch (err: any) {
       if (err.message === 'AI_NOT_CONFIGURED') return notConfiguredReply(reply);
@@ -98,42 +107,34 @@ ${ctx}
   });
 
   // ── POST /ai/breakdown ────────────────────────────────────────────────────
-  // Post-success analysis: what concept, why it works, edge cases, alternative.
-  // Called after test PASSES.
 
   app.post('/ai/breakdown', { preHandler: authenticate }, async (request, reply) => {
-    if (!env.ANTHROPIC_API_KEY) return notConfiguredReply(reply);
+    if (!env.GEMINI_API_KEY) return notConfiguredReply(reply);
 
     const body = breakdownSchema.safeParse(request.body);
     if (!body.success) return reply.code(422).send({ error: 'Validation failed', code: 'VALIDATION_ERROR' });
 
     const { taskTitle, taskPrompt, signature, language, userSolution, category, strategy } = body.data;
 
-    const prompt = `Ты наставник по программированию. Студент только что решил задачу на ${language}. Помоги ему понять что именно он сделал и почему это работает.
+    const prompt = `Ты наставник по программированию. Студент решил задачу на ${language}.
 
 Задача: "${taskTitle}"
-Категория: ${category ?? 'общая'}${strategy ? ` · Стратегия: ${strategy}` : ''}
+Категория: ${category ?? 'общая'}${strategy ? ` · ${strategy}` : ''}
 Условие: ${taskPrompt}
 ${signature ? `Сигнатура: ${signature}` : ''}
 
-Решение студента:
+Решение:
 \`\`\`${language}
 ${userSolution}
 \`\`\`
 
-Ответь в формате JSON (без markdown, только JSON):
-{
-  "concept": "какой главный паттерн/концепт применён, 1 предложение",
-  "whyItWorks": "почему это решение работает, 1-2 предложения простым языком",
-  "edgeCases": "какие граничные случаи это решение обрабатывает или нет, 1 предложение",
-  "nextStep": "что стоит потренировать дальше по этой теме, 1 предложение"
-}
+Ответь строго в JSON (без markdown, только объект):
+{"concept":"какой паттерн применён — 1 предложение","whyItWorks":"почему работает — 1-2 предложения","edgeCases":"граничные случаи — 1 предложение","nextStep":"что тренировать дальше — 1 предложение"}
 
-Отвечай на русском, коротко и по делу.`;
+Отвечай на русском.`;
 
     try {
-      const raw = await callClaude(prompt, 400);
-      // Extract JSON from response
+      const raw = await callGemini(prompt, 400);
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON in response');
       const breakdown = JSON.parse(jsonMatch[0]);
