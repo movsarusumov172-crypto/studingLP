@@ -202,9 +202,26 @@ describe('Leaderboard', () => {
   });
 });
 
-// ── Cleanup ────────────────────────────────────────────────────────────────────
+// ── Cleanup (logout + delete test user from DB) ───────────────────────────────
 
 describe('Cleanup', () => {
+  test('DELETE test user from DB', async () => {
+    // Only run cleanup if we have DB access (server-side admin endpoint not exposed)
+    // Instead: use neon directly if DATABASE_URL is set
+    if (!process.env.DATABASE_URL) {
+      console.log('  (no DATABASE_URL — skipping DB cleanup, test user left in DB)');
+      return;
+    }
+    try {
+      const { neon } = await import('@neondatabase/serverless' as any);
+      const sql = neon(process.env.DATABASE_URL);
+      const deleted = await sql`DELETE FROM users WHERE email LIKE 'integration_%@test-jstrainer.dev' RETURNING email`;
+      console.log(`  cleaned up ${deleted.length} test user(s)`);
+    } catch (err: any) {
+      console.log(`  DB cleanup failed (non-critical): ${err.message}`);
+    }
+  });
+
   test('POST /auth/logout invalidates session', async () => {
     // Use AbortController to avoid hanging on network issues
     const ctrl = new AbortController();
