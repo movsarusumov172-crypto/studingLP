@@ -237,6 +237,7 @@ const state = {
   currentHintIndex: 0,
   currentMode: 'practice',
   solutionVisible: false,
+  solutionWasViewed: false,  // if true — no XP for this task
   currentTaskSolved: false,
   failuresOnCurrentTask: 0,
   currentTaskAwarded: false,
@@ -2484,6 +2485,7 @@ async function generateTask(mode = 'practice', sessionOverrides = {}) {
   state.currentReport = null;
   state.currentHintIndex = 0;
   state.solutionVisible = false;
+  state.solutionWasViewed = false;
   state.currentTaskSolved = false;
   state.failuresOnCurrentTask = 0;
   state.currentTaskAwarded = false;
@@ -2534,8 +2536,13 @@ async function runCurrentTask() {
         forgetCurrentTaskDraft();
         updateProgressView();
         updateAchievementsView();
-        setRunStatus('Задача решена', 'success');
-        showRunFeedback({ passed: true, xp: state.currentTask.xp || 0 });
+        if (state.solutionWasViewed) {
+          setRunStatus('Код верный, но XP не начисляется — ты смотрел ответ.', 'neutral');
+          showFeedbackToast({ kind: 'success', title: 'Верно, но без XP', detail: 'Открыл ответ — XP не начисляется. Попробуй следующую задачу сам.' });
+        } else {
+          setRunStatus('Задача решена', 'success');
+          showRunFeedback({ passed: true, xp: state.currentTask.xp || 0 });
+        }
         if (streakMilestone > 0) {
           showStreakCelebration(streakMilestone);
         }
@@ -2593,6 +2600,14 @@ function updateProgressAfterRun(report) {
   state.progress.attempted += 1;
   let streakMilestone = 0;
   if (report.passed) {
+    // If solution was viewed — count as attempted but give no XP, streak, or solved credit
+    if (state.solutionWasViewed) {
+      state.progress.streak = 0; // break streak
+      updateReviewDeckAfterRun(true);
+      saveProgress();
+      return 0;
+    }
+
     state.progress.correct += 1;
     state.progress.solved += 1;
     state.progress.xp += state.currentTask.xp || 0;
@@ -2660,8 +2675,11 @@ function showNextHint(silent = false) {
 
 function toggleAnswer() {
   state.solutionVisible = !state.solutionVisible;
+  if (state.solutionVisible) {
+    state.solutionWasViewed = true; // mark — no XP for this task
+  }
   renderSolutionPanel();
-  setRunStatus(state.solutionVisible ? 'Показан ответ' : 'Ответ скрыт', 'neutral');
+  setRunStatus(state.solutionVisible ? 'Показан ответ — XP за эту задачу не начисляется' : 'Ответ скрыт', 'neutral');
 }
 
 function resetEditor() {
