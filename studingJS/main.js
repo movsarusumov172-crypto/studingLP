@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { registerExecutionIpc } = require('./src/execution');
+const { registerAuthSessionIpc } = require('./src/authSessionStore');
 
 // Disable Chromium background networking — prevents unexpected telemetry/prefetch calls
 // that happen at the process level and bypass the renderer's Content Security Policy.
@@ -91,6 +92,7 @@ function createWindow() {
 }
 
 registerExecutionIpc(ipcMain);
+registerAuthSessionIpc(ipcMain);
 
 app.setAppUserModelId('JS Infinite Trainer');
 app.whenReady().then(() => {

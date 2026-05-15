@@ -25,11 +25,11 @@ export class CustomTasksService {
   ) {
     // Enforce limit before inserting new tasks
     const existing = await db
-      .select({ id: customTasks.id })
+      .select({ taskId: customTasks.taskId })
       .from(customTasks)
       .where(and(eq(customTasks.userId, userId), eq(customTasks.kernelId, kernelId)));
 
-    const isNew = !existing.some((r) => r.id === taskId);
+    const isNew = !existing.some((r) => r.taskId === taskId);
     if (isNew && existing.length >= MAX_CUSTOM_TASKS) {
       throw new Error(`MAX_CUSTOM_TASKS: limit is ${MAX_CUSTOM_TASKS} per kernel`);
     }

@@ -410,6 +410,56 @@ custom_tasks:  нет
 
 Новые записи добавляются сверху.
 
+### 2026-05-15 — Codex — security/stability hardening + installer refresh
+
+**Request:** решить найденные проблемы стабильности/безопасности, прогнать диагностику, обновить installer и GitHub Release.
+
+**Changed files:**
+- `README.md`
+- `release.mjs`
+- `server/package.json`
+- `server/src/index.ts`
+- `server/src/routes/billing.ts`
+- `server/src/services/auth.service.ts`
+- `server/src/services/custom-tasks.service.ts`
+- `server/src/tests/security-contract.test.ts`
+- `studingJS/main.js`
+- `studingJS/package.json`
+- `studingJS/package-lock.json`
+- `studingJS/preload.js`
+- `studingJS/src/authSessionStore.js`
+- `studingJS/src/renderer/api/auth.mjs`
+- `studingJS/src/renderer/api/client.mjs`
+- `studingJS/src/renderer/app.js`
+- `studingJS/src/tests/securityContractTest.js`
+
+**What changed:**
+- Refresh token больше не живет в renderer `localStorage`: login/register/refresh/logout перенесены в main process через IPC, а refresh token хранится через Electron `safeStorage` в `userData/auth-session.json`. Если системное шифрование недоступно, приложение держит refresh token только в памяти.
+- Backend теперь хранит/ищет refresh tokens как HMAC-SHA256 hash через `JWT_REFRESH_SECRET`, а не plaintext.
+- Stripe webhook подписывается по сохраненному raw body, а не по пересобранному `JSON.stringify(request.body)`.
+- Исправлен лимит кастомных задач: существующие задачи сравниваются по `taskId`, а не по row uuid.
+- Исправлен cloud sync conflict path: `{ conflict: true }` больше не считается успешной синхронизацией без merge/retry.
+- `openExternal` в preload теперь пропускает только доверенные HTTPS-хосты для Stripe/backend, а не любой URL.
+- Добавлены security contract tests для backend/frontend, плюс `dompurify` override до `^3.4.3`, чтобы production audit frontend был чистым.
+- `release.mjs` починен для путей с кириллицей/пробелами и теперь корректно парсит `npm audit --json`, даже когда npm возвращает non-zero exit code.
+- Windows installer пересобран и загружен в GitHub Release `v1.0.0` как `JS.Infinite.Trainer.Setup.1.0.0.exe` (size `93836416`, sha256 `561bff20d3406e2f6e1abc21b3217adc4df0eaf1afd9dde74000ae3c043f906a`).
+
+**Verification:**
+- `npm run test:security` в `server` — passed.
+- `npm run security:contract` в `studingJS` — passed.
+- `node --check main.js preload.js src/authSessionStore.js src/renderer/app.js src/renderer/api/auth.mjs src/renderer/api/client.mjs` — passed.
+- `npm run build` в `server` — passed.
+- `npm audit --omit=dev --audit-level=moderate` в `server` — passed, 0 vulnerabilities.
+- `npm audit --omit=dev --audit-level=moderate` в `studingJS` — passed, 0 vulnerabilities.
+- `npm run smoke`, `tasks:contract`, `theory:practice`, `theory:coverage`, `theory:content`, `theory:scroll`, `diversity`, `fallback`, `qa:trust`, `runtime:timeout`, `review:loop`, `report:serialization`, `weighting`, `drafts:persistence`, `variation`, `python:variation`, `go:smoke`, `go:variation`, `java:variation`, `csharp:variation` — passed.
+- `git diff --check` — passed.
+- `node release.mjs` — passed: 10/10, installer rebuilt, production `/health` ok.
+- `gh release upload v1.0.0 ... --clobber` — passed, release asset verified.
+
+**Coordination notes:**
+- Старые plaintext refresh sessions в базе после backend deploy станут недействительными: это ожидаемо, пользователю достаточно перелогиниться.
+- Backend deploy в Railway отдельно не запускался. Если Railway не auto-deploy с `main`, после push нужно сделать `railway up` из `server`.
+
 ### 2026-05-15 — Claude Code — beta polish
 
 **Changes:**

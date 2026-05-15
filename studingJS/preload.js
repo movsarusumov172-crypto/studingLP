@@ -2,6 +2,25 @@ const { contextBridge, ipcRenderer, shell } = require('electron');
 const kernelManager = require('./src/execution');
 const reviewPlanner = require('./src/core/reviewPlanner');
 
+const TRUSTED_EXTERNAL_HOSTS = new Set([
+  'checkout.stripe.com',
+  'billing.stripe.com',
+  'perfect-curiosity-production-b689.up.railway.app',
+]);
+
+function openTrustedExternal(url) {
+  try {
+    const parsed = new URL(String(url));
+    const hostAllowed = TRUSTED_EXTERNAL_HOSTS.has(parsed.hostname) || parsed.hostname.endsWith('.stripe.com');
+    if (parsed.protocol !== 'https:' || !hostAllowed) {
+      return Promise.resolve(false);
+    }
+    return shell.openExternal(parsed.toString()).then(() => true);
+  } catch {
+    return Promise.resolve(false);
+  }
+}
+
 function cloneForIpc(value) {
   if (value === null || value === undefined) {
     return value;
@@ -69,5 +88,10 @@ contextBridge.exposeInMainWorld('appApi', {
   getReviewSnapshot: (categories, progress, masteryByCategory, now) => reviewPlanner.getReviewSnapshot(categories, progress, masteryByCategory, now),
   updateReviewDeck: (categories, reviewDeck, category, passed, mastery, now) => reviewPlanner.updateReviewDeck(categories, reviewDeck, category, passed, mastery, now),
   formatReviewDue: (dueAt, now) => reviewPlanner.formatReviewDue(dueAt, now),
-  openExternal: (url) => shell.openExternal(String(url))
+  authRegister: (payload) => ipcRenderer.invoke('app:authRegister', structuredClone(payload ?? {})),
+  authLogin: (payload) => ipcRenderer.invoke('app:authLogin', structuredClone(payload ?? {})),
+  authRefresh: (payload) => ipcRenderer.invoke('app:authRefresh', structuredClone(payload ?? {})),
+  authLogout: (payload) => ipcRenderer.invoke('app:authLogout', structuredClone(payload ?? {})),
+  authClear: () => ipcRenderer.invoke('app:authClear'),
+  openExternal: (url) => openTrustedExternal(url)
 });

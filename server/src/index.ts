@@ -39,8 +39,10 @@ const app = Fastify({
 
 // Allow DELETE/GET requests without Content-Type (Fastify v5 is strict)
 app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
-  if (!body) { done(null, {}); return; }
-  try { done(null, JSON.parse(body as string)); }
+  const rawBody = typeof body === 'string' ? body : '';
+  (req as unknown as { rawBody?: string }).rawBody = rawBody;
+  if (!rawBody) { done(null, {}); return; }
+  try { done(null, JSON.parse(rawBody)); }
   catch (e: any) { done(e); }
 });
 

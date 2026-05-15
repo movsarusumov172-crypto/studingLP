@@ -16,24 +16,14 @@ export const tokenStore = {
 };
 
 async function _refreshSession() {
-  const rt = localStorage.getItem(STORAGE_KEYS.refreshToken);
-  if (!rt) throw new Error('NO_REFRESH_TOKEN');
-
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ refreshToken: rt }),
-  });
-
-  if (!res.ok) {
-    localStorage.removeItem(STORAGE_KEYS.refreshToken);
+  const result = await window.appApi.authRefresh({ apiBase: API_BASE });
+  if (!result?.ok) {
     tokenStore.clear();
     throw new Error('REFRESH_FAILED');
   }
 
-  const data = await res.json();
+  const data = result.data ?? {};
   tokenStore.set(data.accessToken);
-  localStorage.setItem(STORAGE_KEYS.refreshToken, data.refreshToken);
   if (data.plan) localStorage.setItem(STORAGE_KEYS.userPlan, data.plan);
   return data.accessToken;
 }

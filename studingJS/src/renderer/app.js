@@ -3041,8 +3041,21 @@ function setSyncDot(state) { // 'ok' | 'syncing' | 'error'
 async function syncToCloud() {
   if (!isLoggedIn()) return;
   setSyncDot('syncing');
-  const ok = await syncProgress(ACTIVE_KERNEL_ID, state.progress);
-  setSyncDot(ok ? 'ok' : 'error');
+  const syncResult = await syncProgress(ACTIVE_KERNEL_ID, state.progress);
+
+  if (syncResult && typeof syncResult === 'object' && syncResult.conflict) {
+    const merged = await fetchAndMergeProgress(ACTIVE_KERNEL_ID, state.progress);
+    state.progress = merged;
+    saveProgress();
+    updateProgressView();
+    updateAchievementsView();
+
+    const retryResult = await syncProgress(ACTIVE_KERNEL_ID, state.progress);
+    setSyncDot(retryResult === true ? 'ok' : 'error');
+    return;
+  }
+
+  setSyncDot(syncResult === true ? 'ok' : 'error');
 }
 
 async function pullFromCloud() {
@@ -4416,8 +4429,7 @@ function setupControlListeners() {
   els.accountCloseBtn?.addEventListener('click', hideAccountModal);
 
   els.accountLogoutBtn?.addEventListener('click', async () => {
-    const rt = localStorage.getItem('jt.auth.refreshToken') ?? '';
-    await logout(rt);
+    await logout();
     hideAccountModal();
     renderAuthStatus();
     setSyncDot('ok');

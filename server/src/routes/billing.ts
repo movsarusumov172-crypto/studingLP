@@ -11,6 +11,8 @@ import { db } from '../db/client.js';
 import { users, subscriptions } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
+type RequestWithRawBody = FastifyRequest & { rawBody?: string };
+
 function stripeRequired(reply: any) {
   if (!stripe) {
     reply.code(503).send({
@@ -128,8 +130,11 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     if (!stripe) return reply.code(200).send({ received: true });
 
     const sig     = request.headers['stripe-signature'] as string ?? '';
-    // rawBody from parsed body — signature verification only works when STRIPE_WEBHOOK_SECRET is set
-    const rawBuf  = Buffer.from(JSON.stringify(request.body));
+    const rawBody = (request as RequestWithRawBody).rawBody;
+    if (!rawBody) {
+      return reply.code(400).send({ error: 'Missing raw webhook body' });
+    }
+    const rawBuf  = Buffer.from(rawBody);
 
     try {
       await handleWebhookEvent(rawBuf, sig);

@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "test:integration": "tsx --test src/tests/integration.test.ts",
-    "test:integration:prod": "TEST_URL=https://perfect-curiosity-production-b689.up.railway.app tsx --test src/tests/integration.test.ts"
+    "test:integration:prod": "TEST_URL=https://perfect-curiosity-production-b689.up.railway.app tsx --test src/tests/integration.test.ts",
+    "test:security": "tsx --test src/tests/security-contract.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",

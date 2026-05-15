@@ -4,10 +4,12 @@
  */
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT       = new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
-const ELECTRON   = `${ROOT}studingJS`;
-const SERVER     = `${ROOT}server`;
+const ROOT       = dirname(fileURLToPath(import.meta.url));
+const ELECTRON   = join(ROOT, 'studingJS');
+const SERVER     = join(ROOT, 'server');
 
 let passed = 0, failed = 0;
 
@@ -27,6 +29,16 @@ function run(cmd, cwd) {
   execSync(cmd, { cwd, stdio: 'pipe', timeout: 120_000 });
 }
 
+function auditJson(cwd) {
+  try {
+    return JSON.parse(execSync('npm audit --json', { cwd }).toString());
+  } catch (err) {
+    const stdout = err?.stdout?.toString?.() ?? '';
+    if (!stdout) throw err;
+    return JSON.parse(stdout);
+  }
+}
+
 console.log('\n📋  Release checklist\n');
 
 // ── Frontend ──────────────────────────────────────────────────────────────────
@@ -37,8 +49,7 @@ step('theory:practice contract', () => run('npm run theory:practice', ELECTRON))
 step('theory:coverage (94 topics)', () => run('npm run theory:coverage', ELECTRON));
 step('node syntax check app.js', () => run('node --check src/renderer/app.js', ELECTRON));
 step('audit (no critical/high)', () => {
-  const out = execSync('npm audit --json', { cwd: ELECTRON }).toString();
-  const d = JSON.parse(out);
+  const d = auditJson(ELECTRON);
   const { critical = 0, high = 0 } = d.metadata?.vulnerabilities ?? {};
   if (critical > 0) throw new Error(`${critical} critical vulnerabilities`);
   if (high > 1) throw new Error(`${high} high vulnerabilities (1 accepted: electron)`);
@@ -49,8 +60,7 @@ console.log('\nBackend (server):');
 
 step('TypeScript build', () => run('npx tsc --noEmit', SERVER));
 step('audit (0 critical, 0 high)', () => {
-  const out = execSync('npm audit --json', { cwd: SERVER }).toString();
-  const d = JSON.parse(out);
+  const d = auditJson(SERVER);
   const { critical = 0, high = 0 } = d.metadata?.vulnerabilities ?? {};
   if (critical > 0) throw new Error(`${critical} critical vulnerabilities`);
   if (high > 0) throw new Error(`${high} high vulnerabilities`);
@@ -70,7 +80,7 @@ console.log('\nBuild:');
 
 step('installer build', () => run('npm run dist', ELECTRON));
 step('installer exists', () => {
-  const f = `${ELECTRON}/dist/JS Infinite Trainer Setup 1.0.0.exe`;
+  const f = join(ELECTRON, 'dist', 'JS Infinite Trainer Setup 1.0.0.exe');
   if (!existsSync(f)) throw new Error('installer not found');
 });
 

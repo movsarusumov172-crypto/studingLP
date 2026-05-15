@@ -4,10 +4,18 @@ import { eq, and, gt, asc } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { users, sessions } from '../db/schema.js';
 import type { User } from '../db/schema.js';
+import { env } from '../config.js';
 
 const BCRYPT_ROUNDS     = 12;
 const REFRESH_TTL_DAYS  = 30;
 const MAX_SESSIONS      = 5; // max active sessions per user
+
+export function hashRefreshToken(token: string): string {
+  return crypto
+    .createHmac('sha256', env.JWT_REFRESH_SECRET)
+    .update(token)
+    .digest('hex');
+}
 
 export class AuthService {
   // ── Register ───────────────────────────────────────────────────────────────
@@ -77,18 +85,20 @@ export class AuthService {
     const token     = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
 
-    await db.insert(sessions).values({ userId, refreshToken: token, expiresAt });
+    await db.insert(sessions).values({ userId, refreshToken: hashRefreshToken(token), expiresAt });
 
     return token;
   }
 
   async rotateRefreshToken(oldToken: string): Promise<{ userId: string; newToken: string }> {
+    const oldTokenHash = hashRefreshToken(oldToken);
+
     const [session] = await db
       .select()
       .from(sessions)
       .where(
         and(
-          eq(sessions.refreshToken, oldToken),
+          eq(sessions.refreshToken, oldTokenHash),
           gt(sessions.expiresAt, new Date()),
         ),
       )
@@ -106,7 +116,7 @@ export class AuthService {
   }
 
   async revokeRefreshToken(token: string): Promise<void> {
-    await db.delete(sessions).where(eq(sessions.refreshToken, token));
+    await db.delete(sessions).where(eq(sessions.refreshToken, hashRefreshToken(token)));
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
