@@ -14,6 +14,7 @@ import { restoreSession, login, register, logout, getStoredEmail, isLoggedIn } f
 import { syncProgress, fetchAndMergeProgress } from './api/progress.mjs';
 import { startCheckout, openBillingPortal, getBillingStatus } from './api/billing.mjs';
 import { apiFetch } from './api/client.mjs';
+import { logSolveAttempt } from './api/solve.mjs';
 import { syncCustomTask, deleteCustomTaskFromServer, fetchAndMergeCustomTasks } from './api/customTasks.mjs';
 import { fetchLeaderboard } from './api/leaderboard.mjs';
 
@@ -2644,6 +2645,30 @@ function updateProgressAfterRun(report) {
   updateReviewDeckAfterRun(Boolean(report.passed));
   saveProgress();
   void syncToCloud();
+
+  // Log attempt to solve_attempts table (fire-and-forget)
+  if (isLoggedIn() && state.currentTask) {
+    const failedTest = Array.isArray(report.tests) ? report.tests.find(t => !t.passed) : null;
+    void logSolveAttempt({
+      kernelId:       state.currentTask.kernelId || ACTIVE_KERNEL_ID,
+      taskSeed:       state.currentTask.seed,
+      category:       state.currentTask.category,
+      difficulty:     state.currentTask.difficulty,
+      passed:         Boolean(report.passed),
+      timeMs:         state.taskStartedAt ? Date.now() - state.taskStartedAt : 0,
+      hintsUsed:      state.currentHintIndex,
+      solutionViewed: state.solutionWasViewed,
+      errorType:      failedTest?.error
+        ? (/edge.case|empty|null|\[\]/i.test(failedTest.error) ? 'edge-case'
+          : /off.by.one|±1/i.test(failedTest.error) ? 'off-by-one'
+          : /timed.out|timeout/i.test(failedTest.error) ? 'timeout'
+          : /undefined|not.defined/i.test(failedTest.error) ? 'undefined'
+          : /type/i.test(failedTest.error) ? 'type-error'
+          : 'other')
+        : undefined,
+    });
+  }
+
   return streakMilestone;
 }
 

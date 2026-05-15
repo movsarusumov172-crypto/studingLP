@@ -5,6 +5,7 @@ import {
   text,
   integer,
   bigint,
+  boolean,
   jsonb,
   timestamp,
   uniqueIndex,
@@ -74,6 +75,21 @@ export const progress = pgTable(
   }),
 );
 
+export const solveAttempts = pgTable('solve_attempts', {
+  id:             uuid('id').defaultRandom().primaryKey(),
+  userId:         uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  kernelId:       text('kernel_id').notNull(),
+  taskSeed:       text('task_seed'),
+  category:       text('category'),
+  difficulty:     text('difficulty'),
+  passed:         boolean('passed').notNull(),
+  timeMs:         integer('time_ms').default(0).notNull(),
+  hintsUsed:      integer('hints_used').default(0).notNull(),
+  solutionViewed: boolean('solution_viewed').default(false).notNull(),
+  errorType:      text('error_type'),   // 'edge-case' | 'off-by-one' | 'type-error' | 'timeout' | null
+  createdAt:      timestamp('created_at').defaultNow().notNull(),
+});
+
 export const customTasks = pgTable(
   'custom_tasks',
   {
@@ -97,3 +113,4 @@ export type NewUser      = typeof users.$inferInsert;
 export type Session      = typeof sessions.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Progress     = typeof progress.$inferSelect;
+export type SolveAttempt = typeof solveAttempts.$inferSelect;

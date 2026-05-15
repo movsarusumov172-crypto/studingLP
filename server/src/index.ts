@@ -11,6 +11,7 @@ import { billingRoutes } from './routes/billing.js';
 import { leaderboardRoutes } from './routes/leaderboard.js';
 import { customTasksRoutes } from './routes/custom-tasks.js';
 import { aiRoutes } from './routes/ai.js';
+import { solveRoutes } from './routes/solve.js';
 import { AppError } from './services/auth.service.js';
 
 // ── Sentry ────────────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ await app.register(billingRoutes);
 await app.register(leaderboardRoutes);
 await app.register(customTasksRoutes);
 await app.register(aiRoutes);
+await app.register(solveRoutes);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
