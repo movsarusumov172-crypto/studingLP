@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { buildSafeProcessEnv, NATIVE_RUN_TIMEOUT_MS } = require('../../runtime/childProcessSafety');
 
 const taskEngine = require('../../generation');
 const { createRng, hashString } = require('../../engine/rng');
@@ -185,6 +186,21 @@ function pickPrompt(rng, templates, data) {
   return typeof template === 'function' ? template(data) : String(template);
 }
 
+const GO_PRIMITIVE_TYPES = new Set(['int', 'string', 'bool']);
+
+function isSafeGoType(type) {
+  if (GO_PRIMITIVE_TYPES.has(type)) {
+    return true;
+  }
+
+  if (type.startsWith('[]')) {
+    return isSafeGoType(type.slice(2));
+  }
+
+  const mapMatch = type.match(/^map\[(int|string|bool)\](int|string|bool)$/);
+  return Boolean(mapMatch);
+}
+
 function normalizeGoType(type) {
   const text = String(type || '').trim();
   if (!text) {
@@ -212,11 +228,12 @@ function normalizeGoType(type) {
   if (lower === 'bool[]') {
     return '[]bool';
   }
-  if (lower.startsWith('map[') || lower.startsWith('[]')) {
+
+  if (isSafeGoType(compact)) {
     return compact;
   }
 
-  return compact;
+  return 'int';
 }
 
 function defaultArgNameForType(type, index) {
@@ -2481,11 +2498,12 @@ function normalizeCustomTask(raw) {
   const variationFields = extractVariationFields(raw);
   const meta = raw.meta && typeof raw.meta === 'object' ? raw.meta : {};
   const goMeta = meta.go && typeof meta.go === 'object' ? meta.go : {};
-  const argTypes = Array.isArray(goMeta.argTypes) && goMeta.argTypes.length > 0
+  const rawArgTypes = Array.isArray(goMeta.argTypes) && goMeta.argTypes.length > 0
     ? goMeta.argTypes.slice()
     : Array.isArray(raw.argTypes) && raw.argTypes.length > 0
       ? raw.argTypes.slice()
       : ['[]int'];
+  const argTypes = rawArgTypes.map((type) => normalizeGoType(type));
   const argNames = buildArgNames(argTypes, Array.isArray(goMeta.argNames) ? goMeta.argNames.slice() : Array.isArray(raw.argNames) ? raw.argNames.slice() : []);
   const returnType = normalizeGoType(goMeta.returnType || raw.returnType || 'int');
   const signature = normalizeGoSignature(raw.signature, returnType, argTypes, argNames);
@@ -2657,6 +2675,8 @@ async function runTaskTests(task, userCode) {
       cwd: workDir,
       encoding: 'utf8',
       windowsHide: true,
+      timeout: NATIVE_RUN_TIMEOUT_MS,
+      env: buildSafeProcessEnv(),
       maxBuffer: 16 * 1024 * 1024
     });
 

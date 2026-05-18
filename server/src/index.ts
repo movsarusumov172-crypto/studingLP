@@ -58,9 +58,11 @@ await app.register(rateLimit, {
   }),
 });
 await app.register(cors, {
-  origin:      env.CORS_ORIGIN,
+  origin:      env.CORS_ORIGIN.trim() === '*'
+    ? true
+    : env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean),
   methods:     ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
+  credentials: env.CORS_ORIGIN.trim() !== '*',
 });
 await app.register(jwt, { secret: env.JWT_SECRET });
 

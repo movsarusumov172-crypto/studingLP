@@ -201,6 +201,76 @@ function materializeTestValue(value, state) {
   return value;
 }
 
+function hasContextMaterializer(context) {
+  return context && typeof context.__codexMaterialize__ === 'function';
+}
+
+function resetContextTestState(context) {
+  if (hasContextMaterializer(context)) {
+    vm.runInContext('__codexResetTestState__()', context, { timeout: 100 });
+  }
+}
+
+function materializeTestValueForContext(value, state, context) {
+  if (!hasContextMaterializer(context)) {
+    return materializeTestValue(value, state);
+  }
+
+  context.__codexMaterializeInput__ = JSON.stringify(value ?? null);
+  try {
+    return vm.runInContext(
+      '__codexMaterialize__(JSON.parse(__codexMaterializeInput__))',
+      context,
+      { timeout: 100 },
+    );
+  } finally {
+    delete context.__codexMaterializeInput__;
+  }
+}
+
+function syncContextTestState(context, state) {
+  if (!hasContextMaterializer(context)) {
+    return;
+  }
+
+  const snapshotJson = vm.runInContext('JSON.stringify(__codexTestState__)', context, { timeout: 100 });
+  const snapshot = snapshotJson ? JSON.parse(snapshotJson) : {};
+  state.callCounts = snapshot.callCounts || Object.create(null);
+  state.collected = snapshot.collected || Object.create(null);
+}
+
+function createDomDocumentForContext(context, fixture) {
+  if (!hasContextMaterializer(context) || typeof context.__codexCreateDomDocument__ !== 'function') {
+    return createDomDocument(fixture);
+  }
+
+  context.__codexDomFixture__ = JSON.stringify(fixture || {});
+  try {
+    return vm.runInContext(
+      '__codexCreateDomDocument__(JSON.parse(__codexDomFixture__))',
+      context,
+      { timeout: 100 },
+    );
+  } finally {
+    delete context.__codexDomFixture__;
+  }
+}
+
+function prependContextArg(context, first, rest) {
+  if (!hasContextMaterializer(context)) {
+    return [first, ...(Array.isArray(rest) ? rest : [])];
+  }
+
+  context.__codexFirstArg__ = first;
+  context.__codexRestArgs__ = rest;
+  try {
+    return vm.runInContext('[__codexFirstArg__, ...__codexRestArgs__]', context, { timeout: 100 });
+  } finally {
+    delete context.__codexFirstArg__;
+    delete context.__codexRestArgs__;
+  }
+}
+
 function normalizeComparisonValue(value) {
   if (value === null || value === undefined) {
     return value;
@@ -694,7 +764,8 @@ async function executeTaskTests(task, solve, sandbox, context, timeoutMs = 1000)
     let args = [];
 
     try {
-      args = materializeTestValue(test.args || [], state);
+      resetContextTestState(context);
+      args = materializeTestValueForContext(test.args || [], state, context);
 
       if (strategy === 'closure') {
         const current = await awaitWithTimeout(invokeInContext(context, solve, undefined, args, timeoutMs), timeoutMs, 'solve(...)');
@@ -703,7 +774,7 @@ async function executeTaskTests(task, solve, sandbox, context, timeoutMs = 1000)
         if (Array.isArray(test.sequence)) {
           for (const step of test.sequence) {
             const methodName = step.method || 'call';
-            const stepArgs = materializeTestValue(step.input || [], state);
+            const stepArgs = materializeTestValueForContext(step.input || [], state, context);
 
             if (typeof current === 'function' && methodName === 'call') {
               lastActual = await awaitWithTimeout(invokeInContext(context, current, undefined, stepArgs, timeoutMs), timeoutMs, `closure step ${methodName}`);
@@ -726,6 +797,8 @@ async function executeTaskTests(task, solve, sandbox, context, timeoutMs = 1000)
             throw new Error(`expected ${preview(test.expected)}, got ${preview(normalized)}`);
           }
         }
+
+        syncContextTestState(context, state);
 
         if (test.expectCalls) {
           for (const [key, expected] of Object.entries(test.expectCalls)) {
@@ -755,11 +828,12 @@ async function executeTaskTests(task, solve, sandbox, context, timeoutMs = 1000)
       }
 
       if (strategy === 'dom' || test.fixture || test.assertions) {
-        const document = createDomDocument(test.fixture || task.fixture || {});
+        const document = createDomDocumentForContext(context, test.fixture || task.fixture || {});
         sandbox.document = document;
         sandbox.window = sandbox;
         sandbox.self = sandbox;
-        const returned = await awaitWithTimeout(invokeInContext(context, solve, undefined, [document, ...args], timeoutMs), timeoutMs, 'DOM solve(...)');
+        const domArgs = prependContextArg(context, document, args);
+        const returned = await awaitWithTimeout(invokeInContext(context, solve, undefined, domArgs, timeoutMs), timeoutMs, 'DOM solve(...)');
 
         if (Array.isArray(test.assertions)) {
           runDomAssertions(document, test.assertions);
@@ -771,6 +845,8 @@ async function executeTaskTests(task, solve, sandbox, context, timeoutMs = 1000)
             throw new Error(`expected ${preview(test.expected)}, got ${preview(normalized)}`);
           }
         }
+
+        syncContextTestState(context, state);
 
         results.push({
           passed: true,
@@ -789,6 +865,8 @@ async function executeTaskTests(task, solve, sandbox, context, timeoutMs = 1000)
           throw new Error(`expected ${preview(test.expected)}, got ${preview(normalized)}`);
         }
       }
+
+      syncContextTestState(context, state);
 
       if (test.expectCalls) {
         for (const [key, expected] of Object.entries(test.expectCalls)) {

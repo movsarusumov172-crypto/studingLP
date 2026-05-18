@@ -59,6 +59,11 @@ export async function handleWebhookEvent(rawBody: Buffer, signature: string): Pr
   const s = requireStripe();
 
   let event: Stripe.Event;
+  const requiresWebhookSignature = env.NODE_ENV === 'production' || Boolean(env.STRIPE_SECRET_KEY);
+
+  if (!env.STRIPE_WEBHOOK_SECRET && requiresWebhookSignature) {
+    throw new Error('STRIPE_WEBHOOK_SECRET_REQUIRED');
+  }
 
   if (env.STRIPE_WEBHOOK_SECRET) {
     event = s.webhooks.constructEvent(rawBody, signature, env.STRIPE_WEBHOOK_SECRET);

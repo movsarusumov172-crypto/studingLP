@@ -22,6 +22,7 @@ DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
 JWT_SECRET=<минимум 32 символа, любая строка>
 JWT_REFRESH_SECRET=<другая строка, минимум 32 символа>
 NODE_ENV=production
+CORS_ORIGIN=null  # Electron file:// origin. Для web-клиента добавь домен через запятую.
 ```
 
 Опциональные (фичи работают без них):
@@ -31,7 +32,7 @@ RESEND_API_KEY=     # email
 SENTRY_DSN=         # error tracking
 STRIPE_SECRET_KEY=  # платежи
 STRIPE_PRO_PRICE_ID=
-STRIPE_WEBHOOK_SECRET=
+STRIPE_WEBHOOK_SECRET=  # обязательно для Stripe webhook в production
 APP_URL=https://your-domain.com
 ```
 

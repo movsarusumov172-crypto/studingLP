@@ -2,6 +2,11 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const {
+  buildSafeProcessEnv,
+  NATIVE_COMPILE_TIMEOUT_MS,
+  NATIVE_RUN_TIMEOUT_MS,
+} = require('../../runtime/childProcessSafety');
 
 const taskEngine = require('../../generation');
 
@@ -2516,10 +2521,7 @@ function runTaskTests(task, userCode) {
   const solutionPath = path.join(workDir, 'Solution.c');
   const runnerPath = path.join(workDir, 'Runner.c');
   const outputPath = path.join(workDir, 'Runner.exe');
-  const env = { ...process.env };
-  if (runtime.binDir && path.isAbsolute(runtime.binDir)) {
-    env.PATH = `${runtime.binDir}${path.delimiter}${process.env.PATH || ''}`;
-  }
+  const env = buildSafeProcessEnv(runtime.binDir && path.isAbsolute(runtime.binDir) ? runtime.binDir : null);
 
   try {
     fs.writeFileSync(solutionPath, String(userCode || ''), 'utf8');
@@ -2541,6 +2543,7 @@ function runTaskTests(task, userCode) {
       cwd: workDir,
       encoding: 'utf8',
       windowsHide: true,
+      timeout: NATIVE_COMPILE_TIMEOUT_MS,
       maxBuffer: 16 * 1024 * 1024,
       env
     });
@@ -2560,6 +2563,7 @@ function runTaskTests(task, userCode) {
       cwd: workDir,
       encoding: 'utf8',
       windowsHide: true,
+      timeout: NATIVE_RUN_TIMEOUT_MS,
       maxBuffer: 16 * 1024 * 1024,
       env
     });

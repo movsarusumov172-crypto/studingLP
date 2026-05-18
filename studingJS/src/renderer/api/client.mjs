@@ -1,12 +1,5 @@
 import { API_BASE, STORAGE_KEYS } from './config.mjs';
 
-// SECURITY NOTE (pre-v1.0 production):
-// Refresh token currently lives in renderer localStorage.
-// Acceptable for Electron desktop (no web XSS surface, contextIsolation=true).
-// Before major public launch: move to main process via ipcRenderer.invoke('auth:*')
-// and store with electron-store or OS keychain (keytar).
-// Tracking: README2 #1
-
 let _accessToken = null;
 
 export const tokenStore = {

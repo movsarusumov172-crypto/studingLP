@@ -2,6 +2,11 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const {
+  buildSafeProcessEnv,
+  NATIVE_COMPILE_TIMEOUT_MS,
+  NATIVE_RUN_TIMEOUT_MS,
+} = require('../../runtime/childProcessSafety');
 
 const taskEngine = require('../../generation');
 const { buildVariationProfile, extractVariationFields } = require('../../engine/variationProfile');
@@ -3062,6 +3067,8 @@ function runTaskTests(task, userCode) {
       cwd: workDir,
       encoding: 'utf8',
       windowsHide: true,
+      timeout: NATIVE_COMPILE_TIMEOUT_MS,
+      env: buildSafeProcessEnv(),
       maxBuffer: 16 * 1024 * 1024
     });
 
@@ -3080,6 +3087,8 @@ function runTaskTests(task, userCode) {
       cwd: workDir,
       encoding: 'utf8',
       windowsHide: true,
+      timeout: NATIVE_RUN_TIMEOUT_MS,
+      env: buildSafeProcessEnv(),
       maxBuffer: 16 * 1024 * 1024
     });
 

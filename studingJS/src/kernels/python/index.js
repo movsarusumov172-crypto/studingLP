@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { buildSafeProcessEnv, NATIVE_RUN_TIMEOUT_MS } = require('../../runtime/childProcessSafety');
 const { pickVariantByKey, joinPromptParts, normalizeTextList } = require('../../engine/variantTaskBuilder');
 
 const PYTHON_KERNEL_META = {
@@ -2841,9 +2842,7 @@ function ensureRunnerPath() {
   fs.mkdirSync(runnerDir, { recursive: true });
   const runnerHash = hashString(runnerSource).toString(16);
   extractedRunnerPath = path.join(runnerDir, `runner-${runnerHash}.py`);
-  if (!fs.existsSync(extractedRunnerPath)) {
-    fs.writeFileSync(extractedRunnerPath, runnerSource, 'utf8');
-  }
+  fs.writeFileSync(extractedRunnerPath, runnerSource, { encoding: 'utf8', mode: 0o600 });
   return extractedRunnerPath;
 }
 
@@ -2863,7 +2862,8 @@ async function runTaskTests(task, userCode) {
   const result = spawnSync(runtime.command, [...runtime.args, runnerPath], {
     input: payload,
     encoding: 'utf8',
-    timeout: 6000,
+    timeout: NATIVE_RUN_TIMEOUT_MS,
+    env: buildSafeProcessEnv(),
     maxBuffer: 10 * 1024 * 1024
   });
 

@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { registerExecutionIpc } = require('./src/execution');
 const { registerAuthSessionIpc } = require('./src/authSessionStore');
@@ -54,6 +55,20 @@ function configureProfilePaths() {
 
 configureProfilePaths();
 
+function getRendererEntryUrl() {
+  return pathToFileURL(path.join(__dirname, 'src', 'renderer', 'index.html')).toString();
+}
+
+function isTrustedRendererUrl(url) {
+  try {
+    const parsed = new URL(String(url));
+    const trusted = new URL(getRendererEntryUrl());
+    return parsed.protocol === 'file:' && parsed.pathname === trusted.pathname;
+  } catch {
+    return false;
+  }
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1500,
@@ -72,6 +87,12 @@ function createWindow() {
     }
   });
 
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, url) => {
+    if (!isTrustedRendererUrl(url)) {
+      event.preventDefault();
+    }
+  });
   win.webContents.on('did-fail-load', (_, errorCode, errorDescription, validatedURL) => {
     console.error(`[renderer did-fail-load] ${errorCode} ${errorDescription} ${validatedURL}`);
   });
@@ -87,7 +108,7 @@ function createWindow() {
     }
   });
 
-  win.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
+  win.loadURL(getRendererEntryUrl());
   win.once('ready-to-show', () => win.show());
 }
 

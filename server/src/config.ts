@@ -9,7 +9,7 @@ const schema = z.object({
   DATABASE_URL:          z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET:            z.string().min(32, 'JWT_SECRET must be at least 32 chars'),
   JWT_REFRESH_SECRET:    z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 chars'),
-  CORS_ORIGIN:           z.string().default('*'),
+  CORS_ORIGIN:           z.string().default('null,http://localhost:5173'),
   // Gemini — optional, AI hints skipped without this
   GEMINI_API_KEY:        z.string().optional(),
   // Email via Resend — optional, emails skipped without this
@@ -29,6 +29,11 @@ const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
   console.error('❌  Invalid environment variables:');
   console.error(parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+if (parsed.data.NODE_ENV === 'production' && parsed.data.CORS_ORIGIN.trim() === '*') {
+  console.error('CORS_ORIGIN=* is not allowed in production.');
   process.exit(1);
 }
 

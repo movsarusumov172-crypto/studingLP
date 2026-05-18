@@ -93,26 +93,23 @@ export class AuthService {
   async rotateRefreshToken(oldToken: string): Promise<{ userId: string; newToken: string }> {
     const oldTokenHash = hashRefreshToken(oldToken);
 
-    const [session] = await db
-      .select()
-      .from(sessions)
+    const [rotatedSession] = await db
+      .delete(sessions)
       .where(
         and(
           eq(sessions.refreshToken, oldTokenHash),
           gt(sessions.expiresAt, new Date()),
         ),
       )
-      .limit(1);
+      .returning({ userId: sessions.userId });
 
-    if (!session) {
+    if (!rotatedSession) {
       throw new AppError('INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.', 401);
     }
 
-    await db.delete(sessions).where(eq(sessions.id, session.id));
+    const newToken = await this.createRefreshToken(rotatedSession.userId);
 
-    const newToken = await this.createRefreshToken(session.userId);
-
-    return { userId: session.userId, newToken };
+    return { userId: rotatedSession.userId, newToken };
   }
 
   async revokeRefreshToken(token: string): Promise<void> {

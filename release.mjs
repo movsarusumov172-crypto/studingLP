@@ -45,6 +45,7 @@ console.log('\n📋  Release checklist\n');
 console.log('Frontend (studingJS):');
 
 step('smoke test (200 tasks)', () => run('node src/tests/smokeTest.js', ELECTRON));
+step('security contract', () => run('npm run security:contract', ELECTRON));
 step('theory:practice contract', () => run('npm run theory:practice', ELECTRON));
 step('theory:coverage (94 topics)', () => run('npm run theory:coverage', ELECTRON));
 step('node syntax check app.js', () => run('node --check src/renderer/app.js', ELECTRON));
@@ -52,13 +53,14 @@ step('audit (no critical/high)', () => {
   const d = auditJson(ELECTRON);
   const { critical = 0, high = 0 } = d.metadata?.vulnerabilities ?? {};
   if (critical > 0) throw new Error(`${critical} critical vulnerabilities`);
-  if (high > 1) throw new Error(`${high} high vulnerabilities (1 accepted: electron)`);
+  if (high > 0) throw new Error(`${high} high vulnerabilities`);
 });
 
 // ── Backend ───────────────────────────────────────────────────────────────────
 console.log('\nBackend (server):');
 
 step('TypeScript build', () => run('npx tsc --noEmit', SERVER));
+step('security contract', () => run('npm run test:security', SERVER));
 step('audit (0 critical, 0 high)', () => {
   const d = auditJson(SERVER);
   const { critical = 0, high = 0 } = d.metadata?.vulnerabilities ?? {};
